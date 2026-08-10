@@ -64,15 +64,8 @@ Done
 
 ---
 
-## Current Sprint
+## Current status
 
-**Sprint 0 – Project Foundation**
+Sprint goals, completed work, and the living changelog live in **[Progress.md](../progress/Progress.md)**.
 
-Current objectives:
-
-- Project Vision
-- Requirements Engineering
-- Domain Model
-- Database Design
-- ER Diagram
-- Architecture Decisions
+Upcoming sprints and day-to-day board status are tracked in **Jira** (link above).

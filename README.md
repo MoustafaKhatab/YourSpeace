@@ -1,10 +1,5 @@
 # YourSpeace
 
-## Software development structure
-#### i asked GPT to think with me and i tooked it as client so it gives me a business idea , i asked it to add the features that make me apply almost all the company needs so i can apply, and add a complex consepts in to this project
-#### this project gonna include a /doc dir which has all the readme files for each phase starting from graphs going throw the architecture and ends with the deployment
-#### so far i am done with the idea and i am working with the domain model
-
 # Marketplace Backend
 
 An enterprise-level multi-vendor marketplace built to demonstrate modern backend engineering practices.
@@ -13,34 +8,43 @@ The goal of this project is not only to build a production-ready backend, but al
 
 ---
 
-## Documentation
+## Follow the work
 
-| Document | Description |
-|----------|-------------|
-| [Domain Model](docs/Domain_Model.md) | Business entities and relationships |
-| Database Design | Coming Soon |
-| API Design | Coming Soon |
-| Architecture | Coming Soon |
-| Agile Process | Coming Soon |
+| Place | Role |
+|-------|------|
+| **[Jira Board](https://codx207.atlassian.net/jira/software/projects/SCRUM/summary?atlOrigin=eyJpIjoiZGRjNTQ2ZTJhOTk2NDkyOWJhNzJiMGNmYzRlMmUzNjQiLCJwIjoiaiJ9)** | Upcoming sprints, backlog, user stories, and board status |
+| **[Progress](docs/progress/Progress.md)** | Living repo log of what has been finished |
+| **`docs/` phase files** | Stable artifacts for completed design/setup phases |
+
+This project follows an **Agile Scrum** workflow. Process details and the epic list are in [Agile.md](docs/process/Agile.md).
 
 ---
 
-## Project Management
+## Documentation
 
-This project follows an **Agile Scrum** workflow.
-
-The complete development process, including the Product Backlog, Epics, Sprint Planning, User Stories, and development progress, is managed publicly in Jira.
-
-**Jira Board**
-
-> 🔗 **[View Project Board](https://codx207.atlassian.net/jira/software/projects/SCRUM/summary?atlOrigin=eyJpIjoiZGRjNTQ2ZTJhOTk2NDkyOWJhNzJiMGNmYzRlMmUzNjQiLCJwIjoiaiJ9)**
+| Document | Status | Description |
+|----------|--------|-------------|
+| [Progress](docs/progress/Progress.md) | Living | Sprint focus and completed work log |
+| [Setup](docs/setup/Setup.md) | Current | How to install and run the backend |
+| [Domain Model](docs/design/Domain_Model.md) | Done | Business entities and relationships |
+| [Database Design / ERD](docs/design/ERD.md) | Done | Database schema and entity relationships |
+| [Agile Process](docs/process/Agile.md) | Done | Scrum methodology and product backlog epics |
+| API Design | Coming Soon | |
+| Architecture | Coming Soon | |
 
 ---
 
 ## Tech Stack
 
+**In use so far**
+
 - Node.js
 - Express.js
+- Nodemon
+- Postman (API testing)
+
+**Planned**
+
 - PostgreSQL
 - Prisma ORM
 - Docker
@@ -51,4 +55,4 @@ The complete development process, including the Product Backlog, Epics, Sprint P
 
 ## Project Status
 
-🚧 Currently in development.
+See **[Progress.md](docs/progress/Progress.md)** for what has landed, and **[Jira](https://codx207.atlassian.net/jira/software/projects/SCRUM/summary?atlOrigin=eyJpIjoiZGRjNTQ2ZTJhOTk2NDkyOWJhNzJiMGNmYzRlMmUzNjQiLCJwIjoiaiJ9)** for what is coming next.
