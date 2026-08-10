@@ -1,0 +1,199 @@
+erDiagram
+    USER ||--o{ ADDRESS : has
+    USER ||--o| SELLER : "may be"
+    SELLER ||--|| STORE : owns
+    STORE ||--o{ PRODUCT : sells
+    PRODUCT ||--o{ PRODUCT_IMAGE : has
+    PRODUCT ||--o{ PRODUCT_VARIANT : has
+    CATEGORY ||--o{ CATEGORY : "parent of"
+    PRODUCT ||--o{ PRODUCT_CATEGORY : "classified as"
+    CATEGORY ||--o{ PRODUCT_CATEGORY : contains
+    USER ||--o{ CART : has
+    CART ||--o{ CART_ITEM : contains
+    PRODUCT_VARIANT ||--o{ CART_ITEM : "added as"
+    USER ||--o{ ORDER_PACKAGE : places
+    ORDER_PACKAGE ||--o{ ORDER : splits_into
+    STORE ||--o{ ORDER : fulfills
+    ORDER ||--o{ ORDER_ITEM : contains
+    PRODUCT_VARIANT ||--o{ ORDER_ITEM : "ordered as"
+    ORDER_PACKAGE ||--o{ PAYMENT_SESSION : "paid via"
+    PAYMENT_SESSION ||--o| PAYMENT : "may produce"
+    ORDER ||--|| SHIPMENT : ships
+    USER ||--o{ REVIEW : writes
+    PRODUCT ||--o{ REVIEW : receives
+
+    USER {
+        uuid user_id PK
+        string email
+        string hashed_password
+        string first_name
+        string last_name
+        string phone_number
+        enum role "CUSTOMER | SELLER | ADMIN"
+    }
+
+    ADDRESS {
+        uuid id PK
+        uuid user_id FK
+        string add1
+        string add2
+        string city
+        string state
+        string country
+        string postal_code
+    }
+
+    SELLER {
+        uuid id PK
+        uuid user_id FK
+        datetime created_at
+        datetime updated_at
+    }
+
+    STORE {
+        uuid id PK
+        uuid seller_id FK
+        string name
+        string description
+        string logo_url
+        datetime created_at
+        datetime updated_at
+    }
+
+    PRODUCT {
+        uuid id PK
+        uuid store_id FK
+        string title
+        string description
+        boolean hidden
+        datetime created_at
+        datetime updated_at
+    }
+
+    PRODUCT_IMAGE {
+        uuid id PK
+        uuid product_id FK
+        string image_url
+    }
+
+    PRODUCT_VARIANT {
+        uuid id PK
+        uuid product_id FK
+        string color
+        string size
+        int stock
+    }
+
+    CATEGORY {
+        uuid id PK
+        uuid parent_id FK
+        string name
+        boolean visible
+        json metadata
+    }
+
+    PRODUCT_CATEGORY {
+        uuid product_id FK
+        uuid category_id FK
+    }
+
+    CART {
+        uuid id PK
+        uuid user_id FK
+        string currency
+        string status
+        datetime created_at
+        datetime updated_at
+    }
+
+    CART_ITEM {
+        uuid id PK
+        uuid cart_id FK
+        uuid variant_id FK
+        int quantity
+        decimal unit_price
+    }
+
+    ORDER_PACKAGE {
+        uuid id PK
+        uuid user_id FK
+        string status
+        string currency
+        decimal item_total
+        decimal shipping_total
+        decimal discount_total
+        decimal grand_total
+        datetime created_at
+        datetime updated_at
+    }
+
+    ORDER {
+        uuid id PK
+        uuid order_package_id FK
+        uuid store_id FK
+        string status
+        decimal item_total
+        decimal shipping_cost
+        decimal discount_total
+        decimal grand_total
+        datetime created_at
+        datetime updated_at
+    }
+
+    ORDER_ITEM {
+        uuid id PK
+        uuid order_id FK
+        uuid variant_id FK
+        int quantity
+        decimal unit_price
+        decimal discount
+        decimal subtotal
+    }
+
+    PAYMENT_SESSION {
+        uuid id PK
+        uuid order_package_id FK
+        string provider
+        string provider_session_id
+        string status
+        decimal amount
+        string currency
+        datetime expires_at
+        datetime created_at
+        datetime updated_at
+    }
+
+    PAYMENT {
+        uuid id PK
+        uuid payment_session_id FK
+        string provider
+        string transaction_id
+        string status
+        decimal amount
+        string currency
+        datetime paid_at
+        datetime created_at
+        datetime updated_at
+    }
+
+    SHIPMENT {
+        uuid id PK
+        uuid order_id FK
+        string status
+        string carrier
+        string tracking_number
+        datetime shipped_at
+        datetime delivered_at
+        datetime created_at
+        datetime updated_at
+    }
+
+    REVIEW {
+        uuid id PK
+        uuid user_id FK
+        uuid product_id FK
+        int rating
+        string comment_text
+        datetime created_at
+        datetime updated_at
+    }
