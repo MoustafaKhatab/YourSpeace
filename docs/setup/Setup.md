@@ -11,8 +11,9 @@ Brief guide for running the project so far.
 | Runtime | Node.js |
 | Framework | Express.js |
 | Dev server | Nodemon |
+| Database | PostgreSQL (`pg`) |
 | API testing | Postman |
-| Planned later | PostgreSQL, Prisma, Docker, Redis, RabbitMQ |
+| Planned later | Prisma, Docker, Redis, RabbitMQ |
 
 ---
 
@@ -20,6 +21,7 @@ Brief guide for running the project so far.
 
 - Node.js (LTS recommended)
 - npm
+- PostgreSQL (see [db.md](db.md))
 
 ---
 
@@ -28,6 +30,8 @@ Brief guide for running the project so far.
 ```bash
 cd Backend
 npm install
+cp .env.example .env   # then edit DB_PASSWORD if needed
+npm run db             # apply schema
 npm run dev
 ```
 
@@ -35,6 +39,9 @@ npm run dev
 |---------|----------------|
 | `npm run dev` | Start server with Nodemon (auto-reload) |
 | `npm start` | Start server with Node |
+| `npm run db` | Apply `Database/schema.sql` to PostgreSQL |
+
+Full database guide: **[db.md](db.md)**
 
 Server default: `http://localhost:3000`
 
@@ -62,12 +69,18 @@ YourSpeace/
 │   │   ├── Domain_Model.md
 │   │   └── ERD.md / ERD.mmd / ERD.png / ERD.pdf
 │   └── setup/            # How to run the project
-│       └── Setup.md      # This file
+│       ├── Setup.md      # This file
+│       └── db.md         # PostgreSQL setup & npm run db
 └── Backend/
     ├── package.json
+    ├── .env
+    ├── Database/
+    │   ├── connection.js
+    │   ├── schema.sql
+    │   └── apply_schema.js
     └── src/
         ├── app.js         # Express app setup
-        ├── server.js      # Server entry point
+        ├── server.js      # Server entry point (+ DB check)
         ├── controllers/   # Request handlers
         ├── routes/        # API routes
         ├── services/      # Business logic

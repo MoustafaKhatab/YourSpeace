@@ -26,6 +26,7 @@ This project follows an **Agile Scrum** workflow. Process details and the epic l
 |----------|--------|-------------|
 | [Progress](docs/progress/Progress.md) | Living | Sprint focus and completed work log |
 | [Setup](docs/setup/Setup.md) | Current | How to install and run the backend |
+| [Database Setup](docs/setup/db.md) | Current | PostgreSQL, `.env`, and `npm run db` |
 | [Domain Model](docs/design/Domain_Model.md) | Done | Business entities and relationships |
 | [Database Design / ERD](docs/design/ERD.md) | Done | Database schema and entity relationships |
 | [Agile Process](docs/process/Agile.md) | Done | Scrum methodology and product backlog epics |
@@ -41,11 +42,11 @@ This project follows an **Agile Scrum** workflow. Process details and the epic l
 - Node.js
 - Express.js
 - Nodemon
+- PostgreSQL (`pg`)
 - Postman (API testing)
 
 **Planned**
 
-- PostgreSQL
 - Prisma ORM
 - Docker
 - Redis
