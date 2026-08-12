@@ -142,10 +142,32 @@ const logout = async (req, res) => {
     }
 };
 
+const me = async (req, res) => {
+    try {
+        const session_id = req.headers['x-session-id'] || req.query.session_id;
+        if (!session_id) {
+            return res.status(400).json({
+                message: 'Session ID is required (x-session-id header or session_id query)',
+            });
+        }
+
+        const { user } = await authService.getUserBySessionId(session_id);
+        return res.status(200).json({ user });
+    } catch (error) {
+        if (error.statusCode === 404) {
+            return res.status(404).json({ message: error.message });
+        }
+
+        console.error('Me error:', error.message);
+        return res.status(500).json({ message: 'Failed to get current user' });
+    }
+};
+
 module.exports = {
     register,
     login,
     forgetPassword,
     resetPassword,
     logout,
+    me,
 };

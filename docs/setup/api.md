@@ -32,6 +32,7 @@ Flow uses DB sessions (`sessions` table) and password reset codes (`password_res
 ```text
 Register / Login  →  returns user + session
 Logout            →  session_id → find user → delete that session
+Me                →  session_id → return current user
 Forget password   →  needs session_id → returns email + code_verifier (dev stand-in for email)
 Reset password    →  email + code_verifier + new_password
                     (transaction: update password, delete sessions, mark code used)
@@ -201,9 +202,47 @@ Takes `session_id`, finds the user via JOIN (`sessions` + `users`), then deletes
 
 ---
 
+### `GET /api/auth/me`
+
+Returns the current user for a valid session. Uses `getUserBySessionId` (JOIN `sessions` + `users`).
+
+Pass the session id with either:
+
+```http
+GET http://localhost:3000/api/auth/me
+x-session-id: uuid-from-login-or-register
+```
+
+or
+
+```http
+GET http://localhost:3000/api/auth/me?session_id=uuid-from-login-or-register
+```
+
+**Response `200`**
+```json
+{
+  "user": {
+    "user_id": "1",
+    "email": "user@example.com",
+    "first_name": "Moustafa",
+    "last_name": "Khatab",
+    "phone_number": "01000000000",
+    "role": "CUSTOMER"
+  }
+}
+```
+
+**Errors**
+| Status | When |
+|--------|------|
+| `400` | Missing session id |
+| `404` | Session not found or expired |
+
+---
+
 ## Not implemented yet
 
-- `GET /api/auth/me`
 - Sending reset codes by email (Gmail)
 
 ---

@@ -7,7 +7,7 @@
 
 ## Current focus
 
-**Auth foundation (sessionful)** — register / login / logout / forget + reset password in place; email delivery for reset codes still pending.
+**Auth foundation (sessionful)** — register / login / logout / me / forget + reset password in place; email delivery for reset codes still pending.
 
 **Jira Board**
 
@@ -23,9 +23,10 @@
 - Express + Nodemon; `GET /api/health`
 - PostgreSQL connection pool + startup `SELECT 1` check
 - Schema tables: `users`, `sessions`, `password_reset_codes` (`npm run db`)
-- Auth APIs: register, login, logout, forget-password, reset-password
+- Auth APIs: register, login, logout, me, forget-password, reset-password
 - bcrypt password hashing + uuid session/reset tokens
 - Logout: find user by `session_id`, delete that session
+- Me: return current user from `session_id` (`getUserBySessionId`)
 - Forget password: JOIN session→user, create `code_verifier` (returned in JSON until Gmail)
 - Reset password: transaction (update password + delete sessions + mark code used)
 - Docs: Setup, DB, API reference, Progress
@@ -44,7 +45,7 @@
 | Database design / ER diagram | Done | [ERD.md](../design/ERD.md), [ERD.mmd](../design/ERD.mmd), [ERD.png](../design/ERD.png) |
 | Backend scaffold + health API | Done | `Backend/` |
 | PostgreSQL connection + schema | Done | `Backend/Database/`, [db.md](../setup/db.md) |
-| Sessionful auth (register/login/logout) | Done | `src/routes|controllers|services|rep` auth.*, [api.md](../setup/api.md) |
+| Sessionful auth (register/login/logout/me) | Done | `src/routes|controllers|services|rep` auth.*, [api.md](../setup/api.md) |
 | Password reset (code + transaction) | Done | `password_reset_codes`, forget/reset endpoints |
 | Local setup + API docs | Done | [Setup.md](../setup/Setup.md), [api.md](../setup/api.md) |
 
