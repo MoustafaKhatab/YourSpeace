@@ -1,0 +1,131 @@
+const authService = require('../services/auth.service');
+
+const isValidEmail = (email) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+};
+
+const register = async (req, res) => {
+    try {
+        const { email, password, first_name, last_name, phone_number } = req.body;
+
+        if (!email || !password || !first_name || !last_name) {
+            return res.status(400).json({
+                message: 'email, password, first_name, and last_name are required',
+            });
+        }
+        if (!isValidEmail(email)) {
+            return res.status(400).json({ message: 'Invalid email' });
+        }
+
+        const { user, session } = await authService.register(
+            email,
+            password,
+            first_name,
+            last_name,
+            phone_number || null
+        );
+
+        return res.status(201).json({
+            message: 'User created successfully',
+            user,
+            session,
+        });
+    } catch (error) {
+        if (error.code === '23505') {
+            return res.status(409).json({ message: 'Email already registered' });
+        }
+
+        console.error('Register error:', error.message);
+        return res.status(500).json({ message: 'Failed to register user' });
+    }
+};
+
+const login = async (req, res) => {
+    try {
+        const { email, password } = req.body;
+
+        if (!email || !password) {
+            return res.status(400).json({ message: 'Email and password are required' });
+        }
+        if (!isValidEmail(email)) {
+            return res.status(400).json({ message: 'Invalid email' });
+        }
+
+        const { user, session } = await authService.login(email, password);
+
+        return res.status(200).json({
+            message: 'Login successful',
+            user,
+            session,
+        });
+    } catch (error) {
+        if (error.statusCode === 401) {
+            return res.status(401).json({ message: error.message });
+        }
+
+        console.error('Login error:', error.message);
+        return res.status(500).json({ message: 'Failed to login' });
+    }
+};
+
+const forgetPassword = async (req, res) => {
+    try {
+        const { session_id } = req.body;
+        if (!session_id) {
+            return res.status(400).json({ message: 'Session ID is required' });
+        }
+
+        const { user } = await authService.getUserBySessionId(session_id);
+        const { code_verifier, expires_at } = await authService.createCodeVerifier(user.email);
+
+        return res.status(200).json({
+            message: 'Reset code created (dev only — later sent by email)',
+            email: user.email,
+            code_verifier,
+            expires_at,
+        });
+    } catch (error) {
+        if (error.statusCode === 400 || error.statusCode === 404) {
+            return res.status(error.statusCode).json({ message: error.message });
+        }
+
+        console.error('Forget password error:', error.message);
+        return res.status(500).json({ message: 'Failed to forget password' });
+    }
+};
+
+const resetPassword = async (req, res) => {
+    try {
+        const { email, code_verifier, new_password } = req.body;
+
+        if (!email || !code_verifier || !new_password) {
+            return res.status(400).json({
+                message: 'email, code_verifier, and new_password are required',
+            });
+        }
+        if (!isValidEmail(email)) {
+            return res.status(400).json({ message: 'Invalid email' });
+        }
+
+        const { user } = await authService.resetPassword(email, code_verifier, new_password);
+
+        return res.status(200).json({
+            message: 'Password reset successfully',
+            user,
+        });
+    } catch (error) {
+        if (error.statusCode === 400 || error.statusCode === 404) {
+            return res.status(error.statusCode).json({ message: error.message });
+        }
+
+        console.error('Reset password error:', error.message);
+        return res.status(500).json({ message: 'Failed to reset password' });
+    }
+};
+
+module.exports = {
+    register,
+    login,
+    forgetPassword,
+    resetPassword,
+};

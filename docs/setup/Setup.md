@@ -12,8 +12,10 @@ Brief guide for running the project so far.
 | Framework | Express.js |
 | Dev server | Nodemon |
 | Database | PostgreSQL (`pg`) |
+| Password hashing | bcrypt |
+| IDs / tokens | uuid |
 | API testing | Postman |
-| Planned later | Prisma, Docker, Redis, RabbitMQ |
+| Planned later | Prisma, Docker, Redis, RabbitMQ, Gmail for reset codes |
 
 ---
 
@@ -31,7 +33,7 @@ Brief guide for running the project so far.
 cd Backend
 npm install
 cp .env.example .env   # then edit DB_PASSWORD if needed
-npm run db             # apply schema
+npm run db             # apply schema (users, sessions, password_reset_codes)
 npm run dev
 ```
 
@@ -41,17 +43,20 @@ npm run dev
 | `npm start` | Start server with Node |
 | `npm run db` | Apply `Database/schema.sql` to PostgreSQL |
 
-Full database guide: **[db.md](db.md)**
+- Database guide: **[db.md](db.md)**
+- API reference: **[api.md](api.md)**
 
 Server default: `http://localhost:3000`
 
-### Health check
+### Quick checks
 
 ```text
-GET http://localhost:3000/api/health
+GET  http://localhost:3000/api/health
+POST http://localhost:3000/api/auth/register
+POST http://localhost:3000/api/auth/login
 ```
 
-API endpoints are tested with **Postman**.
+API endpoints are tested with **Postman**. Full request/response shapes: [api.md](api.md).
 
 ---
 
@@ -70,27 +75,32 @@ YourSpeace/
 │   │   └── ERD.md / ERD.mmd / ERD.png / ERD.pdf
 │   └── setup/            # How to run the project
 │       ├── Setup.md      # This file
-│       └── db.md         # PostgreSQL setup & npm run db
+│       ├── db.md         # PostgreSQL setup & tables
+│       └── api.md        # HTTP API reference
 └── Backend/
     ├── package.json
-    ├── .env
+    ├── .env / .env.example
     ├── Database/
     │   ├── connection.js
     │   ├── schema.sql
-    │   └── apply_schema.js
+    │   ├── apply_schema.js
+    │   └── set_password.sql
     └── src/
-        ├── app.js         # Express app setup
-        ├── server.js      # Server entry point (+ DB check)
-        ├── controllers/   # Request handlers
-        ├── routes/        # API routes
-        ├── services/      # Business logic
-        └── middleware/    # Express middleware (ready for use)
+        ├── app.js
+        ├── server.js          # Entry + DB connectivity check
+        ├── routes/            # health + auth
+        ├── controllers/
+        ├── services/
+        ├── rep/               # Repository (SQL / transactions)
+        └── middleware/
 ```
 
 ### Backend request flow
 
 ```text
-Route → Controller → Service → Response
+Route → Controller → Service → Repository (rep) → PostgreSQL
 ```
 
-Example: `/api/health` → `health.controller` → `health.service`
+Examples:
+- `/api/health` → `health.controller` → `health.service`
+- `/api/auth/*` → `auth.controller` → `auth.service` → `auth.repository`

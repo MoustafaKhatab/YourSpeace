@@ -7,11 +7,7 @@
 
 ## Current focus
 
-**Sprint 0 – Project Foundation** (wrapping up / transitioning)
-
-- Backend scaffold is running with a health API
-- PostgreSQL is connected (`yourspeace`); schema apply via `npm run db`
-- Design artifacts for domain and database are documented in `docs/`
+**Auth foundation (sessionful)** — register / login / forget + reset password in place; email delivery for reset codes still pending.
 
 **Jira Board**
 
@@ -23,15 +19,15 @@
 
 - Domain model documented
 - Database ERD documented (Mermaid + PNG/PDF)
-- Backend folder structure (`routes` → `controllers` → `services`)
-- Express + Nodemon setup; `GET /api/health`
-- PostgreSQL connection pool (`Backend/Database/connection.js`)
-- Initial schema (`users` table) + `npm run db` to apply `schema.sql`
-- Server startup DB check (`SELECT 1` before listen)
-- Database setup docs ([db.md](../setup/db.md))
-- Setup guide and Postman for API testing
-- Docs split: stable phase docs vs this living progress log
-- Docs organized into `progress/`, `process/`, `design/`, and `setup/`
+- Backend folder structure: `routes` → `controllers` → `services` → `rep`
+- Express + Nodemon; `GET /api/health`
+- PostgreSQL connection pool + startup `SELECT 1` check
+- Schema tables: `users`, `sessions`, `password_reset_codes` (`npm run db`)
+- Auth APIs: register, login, forget-password, reset-password
+- bcrypt password hashing + uuid session/reset tokens
+- Forget password: JOIN session→user, create `code_verifier` (returned in JSON until Gmail)
+- Reset password: transaction (update password + delete sessions + mark code used)
+- Docs: Setup, DB, API reference, Progress
 
 ---
 
@@ -47,7 +43,9 @@
 | Database design / ER diagram | Done | [ERD.md](../design/ERD.md), [ERD.mmd](../design/ERD.mmd), [ERD.png](../design/ERD.png) |
 | Backend scaffold + health API | Done | `Backend/` |
 | PostgreSQL connection + schema | Done | `Backend/Database/`, [db.md](../setup/db.md) |
-| Local setup docs | Done | [Setup.md](../setup/Setup.md) |
+| Sessionful auth (register/login) | Done | `src/routes|controllers|services|rep` auth.*, [api.md](../setup/api.md) |
+| Password reset (code + transaction) | Done | `password_reset_codes`, forget/reset endpoints |
+| Local setup + API docs | Done | [Setup.md](../setup/Setup.md), [api.md](../setup/api.md) |
 
 ---
 
@@ -57,4 +55,6 @@
 |-------|----------------|
 | [Jira](https://codx207.atlassian.net/jira/software/projects/SCRUM/summary?atlOrigin=eyJpIjoiZGRjNTQ2ZTJhOTk2NDkyOWJhNzJiMGNmYzRlMmUzNjQiLCJwIjoiaiJ9) | Upcoming sprints, stories, and board status |
 | This file (`progress/Progress.md`) | What has landed in the repo |
+| [api.md](../setup/api.md) | Current HTTP endpoints |
+| [db.md](../setup/db.md) | DB setup and implemented tables |
 | Other folders under `docs/` | Finished design/setup artifacts (mostly stable) |

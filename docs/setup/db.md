@@ -16,6 +16,9 @@ Guide for PostgreSQL on this project.
 | Connection pool | `Backend/Database/connection.js` |
 | Env file | `Backend/.env` (gitignored) |
 
+Full marketplace ERD (design): [ERD.md](../design/ERD.md)  
+What is **implemented in SQL so far** is listed below (auth foundation).
+
 ---
 
 ## Prerequisites
@@ -101,10 +104,69 @@ PGPASSWORD=postgres psql -h localhost -U postgres -d yourspeace -f Backend/Datab
 
 **Note:** Tables use `CREATE TABLE IF NOT EXISTS`, so re-running `npm run db` is safe for existing tables. It will not alter columns on tables that already exist — use a new migration/SQL change for that.
 
-### List tables
+---
+
+## Tables implemented so far
+
+| Table | Purpose |
+|-------|---------|
+| `users` | Accounts (email, hashed_password, names, role, …) |
+| `sessions` | Sessionful auth tokens (`session_id`, `expires_at`) |
+| `password_reset_codes` | Dev/email reset codes (`code_verifier`, `used`, `expires_at`) |
+
+### `users`
+- `user_id` PK  
+- `email` unique  
+- `hashed_password`  
+- `first_name`, `last_name`, `phone_number`  
+- `role` (e.g. `CUSTOMER`)
+
+### `sessions`
+- `id` PK  
+- `user_id` FK → `users` (ON DELETE CASCADE)  
+- `session_id` unique  
+- `expires_at`, `created_at`, `updated_at`
+
+### `password_reset_codes`
+- `id` PK  
+- `email`  
+- `code_verifier` unique  
+- `used` (boolean)  
+- `expires_at`, `created_at`
+
+Password reset uses a **transaction**: update password + delete user sessions + mark code `used`.
+
+---
+
+## Inspect tables (psql)
+
+Connect:
+
+```bash
+sudo -u postgres psql -d yourspeace
+```
+
+Useful commands:
+
+```sql
+\dt                          -- list tables
+\d users                     -- describe one table
+\d sessions
+\d password_reset_codes
+
+SELECT * FROM users;
+SELECT * FROM sessions;
+SELECT * FROM password_reset_codes;
+SELECT * FROM users LIMIT 10;
+SELECT COUNT(*) FROM sessions;
+```
+
+One-shot from the shell:
 
 ```bash
 sudo -u postgres psql -d yourspeace -c "\dt"
+sudo -u postgres psql -d yourspeace -c "\d users"
+sudo -u postgres psql -d yourspeace -c "SELECT * FROM password_reset_codes;"
 ```
 
 ---
@@ -121,11 +183,9 @@ server.js  →  pool.query('SELECT 1')  →  PostgreSQL
 
 ### Using the database in code
 
-Prefer **services** for SQL:
+SQL lives mainly in **`src/rep/`** (repository). Services call the repository; prefer parameterized queries:
 
 ```js
-const pool = require('../../Database/connection');
-
 const result = await pool.query(
   'SELECT * FROM users WHERE email = $1',
   [email]
@@ -135,7 +195,7 @@ const result = await pool.query(
 // result.rowCount  → rows affected
 ```
 
-Always use parameterized queries (`$1`, `$2`, …) — do not concatenate user input into SQL.
+For multi-step writes that must succeed together (e.g. reset password), use a client transaction: `BEGIN` → queries → `COMMIT` / `ROLLBACK`.
 
 ---
 
@@ -162,4 +222,4 @@ Backend/
     └── set_password.sql    # Helper to set postgres password
 ```
 
-Schema design reference: [ERD](../design/ERD.md)
+API usage: [api.md](api.md)

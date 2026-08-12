@@ -26,11 +26,11 @@ This project follows an **Agile Scrum** workflow. Process details and the epic l
 |----------|--------|-------------|
 | [Progress](docs/progress/Progress.md) | Living | Sprint focus and completed work log |
 | [Setup](docs/setup/Setup.md) | Current | How to install and run the backend |
-| [Database Setup](docs/setup/db.md) | Current | PostgreSQL, `.env`, and `npm run db` |
+| [Database Setup](docs/setup/db.md) | Current | PostgreSQL, tables, `.env`, `npm run db` |
+| [API Reference](docs/setup/api.md) | Current | Health + auth endpoints (Postman) |
 | [Domain Model](docs/design/Domain_Model.md) | Done | Business entities and relationships |
-| [Database Design / ERD](docs/design/ERD.md) | Done | Database schema and entity relationships |
+| [Database Design / ERD](docs/design/ERD.md) | Done | Full marketplace ER diagram (design) |
 | [Agile Process](docs/process/Agile.md) | Done | Scrum methodology and product backlog epics |
-| API Design | Coming Soon | |
 | Architecture | Coming Soon | |
 
 ---
@@ -43,6 +43,8 @@ This project follows an **Agile Scrum** workflow. Process details and the epic l
 - Express.js
 - Nodemon
 - PostgreSQL (`pg`)
+- bcrypt
+- uuid
 - Postman (API testing)
 
 **Planned**
@@ -51,6 +53,7 @@ This project follows an **Agile Scrum** workflow. Process details and the epic l
 - Docker
 - Redis
 - RabbitMQ
+- Gmail / email for password-reset codes
 
 ---
 
