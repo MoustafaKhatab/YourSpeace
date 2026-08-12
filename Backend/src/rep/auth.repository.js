@@ -135,6 +135,16 @@ const resetPasswordWithCode = async (email, code_verifier, hashedPassword) => {
     }
 };
 
+const deleteSessionBySessionId = async (session_id) => {
+    const query = `
+        DELETE FROM sessions
+        WHERE session_id = $1
+        RETURNING id, user_id, session_id
+    `;
+    const result = await pool.query(query, [session_id]);
+    return result.rows[0];
+};
+
 module.exports = {
     createUser,
     getUserByEmail,
@@ -142,4 +152,5 @@ module.exports = {
     createSession,
     createCodeVerifier,
     resetPasswordWithCode,
+    deleteSessionBySessionId,
 };

@@ -71,9 +71,20 @@ const resetPassword = async (email, code_verifier, newPassword) => {
         error.statusCode = 404;
         throw error;
     }
-    
 
     return { user };
+};
+
+const logout = async (session_id) => {
+    const user = await authRepository.getUserBySessionId(session_id);
+    if (!user) {
+        const error = new Error('User with this session ID not found');
+        error.statusCode = 404;
+        throw error;
+    }
+
+    await authRepository.deleteSessionBySessionId(session_id);
+    return { message: 'Logged out successfully' };
 };
 
 module.exports = {
@@ -82,4 +93,5 @@ module.exports = {
     getUserBySessionId,
     createCodeVerifier,
     resetPassword,
+    logout,
 };

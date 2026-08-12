@@ -123,9 +123,29 @@ const resetPassword = async (req, res) => {
     }
 };
 
+const logout = async (req, res) => {
+    try {
+        const { session_id } = req.body;
+        if (!session_id) {
+            return res.status(400).json({ message: 'Session ID is required' });
+        }
+
+        const result = await authService.logout(session_id);
+        return res.status(200).json(result);
+    } catch (error) {
+        if (error.statusCode === 404) {
+            return res.status(404).json({ message: error.message });
+        }
+
+        console.error('Logout error:', error.message);
+        return res.status(500).json({ message: 'Failed to logout' });
+    }
+};
+
 module.exports = {
     register,
     login,
     forgetPassword,
     resetPassword,
+    logout,
 };

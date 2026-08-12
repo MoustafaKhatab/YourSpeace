@@ -31,6 +31,7 @@ Flow uses DB sessions (`sessions` table) and password reset codes (`password_res
 
 ```text
 Register / Login  →  returns user + session
+Logout            →  session_id → find user → delete that session
 Forget password   →  needs session_id → returns email + code_verifier (dev stand-in for email)
 Reset password    →  email + code_verifier + new_password
                     (transaction: update password, delete sessions, mark code used)
@@ -174,9 +175,34 @@ After a successful reset, the old `session_id` no longer works (sessions were de
 
 ---
 
+### `POST /api/auth/logout`
+
+Takes `session_id`, finds the user via JOIN (`sessions` + `users`), then deletes that session row.
+
+**Body**
+```json
+{
+  "session_id": "uuid-from-login-or-register"
+}
+```
+
+**Response `200`**
+```json
+{
+  "message": "Logged out successfully"
+}
+```
+
+**Errors**
+| Status | When |
+|--------|------|
+| `400` | Missing `session_id` |
+| `404` | Session not found or already logged out |
+
+---
+
 ## Not implemented yet
 
-- `POST /api/auth/logout`
 - `GET /api/auth/me`
 - Sending reset codes by email (Gmail)
 

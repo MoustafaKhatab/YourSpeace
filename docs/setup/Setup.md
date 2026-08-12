@@ -54,6 +54,7 @@ Server default: `http://localhost:3000`
 GET  http://localhost:3000/api/health
 POST http://localhost:3000/api/auth/register
 POST http://localhost:3000/api/auth/login
+POST http://localhost:3000/api/auth/logout
 ```
 
 API endpoints are tested with **Postman**. Full request/response shapes: [api.md](api.md).
