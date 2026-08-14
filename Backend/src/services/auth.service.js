@@ -56,6 +56,43 @@ const getUserBySessionId = async (session_id) => {
     return { user: toSafeUser(user) };
 };
 
+const checkSessionExpiration = async (session_id) => {
+    const session = await authRepository.getSessionBySessionId(session_id);
+    if (!session) {
+        const error = new Error('Invalid session');
+        error.statusCode = 401;
+        throw error;
+    }
+
+    if (new Date(session.expires_at) <= new Date()) {
+        const error = new Error('Session expired');
+        error.statusCode = 401;
+        throw error;
+    }
+
+    return { user_id: session.user_id };
+};
+
+const getUserById = async (user_id) => {
+    const user = await authRepository.getUserById(user_id);
+    if (!user) {
+        const error = new Error('User not found');
+        error.statusCode = 404;
+        throw error;
+    }
+    return { user: toSafeUser(user) };
+};
+
+const checkUserRole = async (user_id, requiredRole) => {
+    const { user } = await getUserById(user_id);
+    if (user.role !== requiredRole) {
+        const error = new Error(`Forbidden: requires ${requiredRole} role`);
+        error.statusCode = 403;
+        throw error;
+    }
+    return { user };
+};
+
 const getUserByEmail = async (email) => {
     const user = await authRepository.getUserByEmail(email);
     if (!user) {
@@ -100,7 +137,10 @@ module.exports = {
     register,
     login,
     getUserBySessionId,
+    getUserById,
     getUserByEmail,
+    checkSessionExpiration,
+    checkUserRole,
     createCodeVerifier,
     resetPassword,
     logout,

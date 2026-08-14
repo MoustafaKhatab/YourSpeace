@@ -123,9 +123,9 @@ const resetPassword = async (req, res) => {
 
 const logout = async (req, res) => {
     try {
-        const { session_id } = req.body;
+        const session_id = req.headers['x-session-id'];
         if (!session_id) {
-            return res.status(400).json({ message: 'Session ID is required' });
+            return res.status(400).json({ message: 'Session ID is required (x-session-id header)' });
         }
 
         const result = await authService.logout(session_id);
@@ -142,10 +142,15 @@ const logout = async (req, res) => {
 
 const me = async (req, res) => {
     try {
-        const session_id = req.query.session_id;
+        // Prefer user attached by sessionAuth middleware
+        if (req.user) {
+            return res.status(200).json({ user: req.user });
+        }
+
+        const session_id = req.headers['x-session-id'];
         if (!session_id) {
             return res.status(400).json({
-                message: 'Session ID is required (x-session-id header or session_id query)',
+                message: 'Session ID is required (x-session-id header)',
             });
         }
 

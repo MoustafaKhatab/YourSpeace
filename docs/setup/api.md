@@ -31,9 +31,9 @@ Flow uses DB sessions (`sessions` table) and password reset codes (`password_res
 
 ```text
 Register / Login  →  returns user + session
-Logout            →  session_id → find user → delete that session
-Me                →  session_id → return current user
-Forget password   →  needs session_id → returns email + code_verifier (dev stand-in for email)
+Logout            →  x-session-id header → find user → delete that session
+Me                →  x-session-id header (+ sessionAuth) → return current user
+Forget password   →  email in body → create code_verifier (dev stand-in for email)
 Reset password    →  email + code_verifier + new_password
                     (transaction: update password, delete sessions, mark code used)
 ```
@@ -108,20 +108,18 @@ Creates a user (role `CUSTOMER`), hashes password with bcrypt, creates a session
 
 ### `POST /api/auth/forget-password`
 
-Dev flow (until email/Gmail is integrated): client must be logged in and send `session_id`. Server looks up the user via **JOIN** (`sessions` + `users`), creates a `code_verifier`, stores it in `password_reset_codes`, and returns the code in the response (later this will be emailed instead).
+Dev flow (until email/Gmail is integrated): send the user email. Server creates a `code_verifier`, stores it in `password_reset_codes`, and returns the code in the response (later this will be emailed instead).
 
 **Body**
 ```json
 {
-  "session_id": "uuid-from-login-or-register"
+  "email": "user@example.com"
 }
 ```
 
 **Response `200`**
 ```json
 {
-  "message": "Reset code created (dev only — later sent by email)",
-  "email": "user@example.com",
   "code_verifier": "uuid-code",
   "expires_at": "..."
 }
@@ -130,8 +128,8 @@ Dev flow (until email/Gmail is integrated): client must be logged in and send `s
 **Errors**
 | Status | When |
 |--------|------|
-| `400` | Missing `session_id` |
-| `404` | Session not found or expired |
+| `400` | Missing email |
+| `404` | User not found |
 
 ---
 
@@ -178,14 +176,14 @@ After a successful reset, the old `session_id` no longer works (sessions were de
 
 ### `POST /api/auth/logout`
 
-Takes `session_id`, finds the user via JOIN (`sessions` + `users`), then deletes that session row.
+Takes `x-session-id` header, finds the user via JOIN (`sessions` + `users`), then deletes that session row.
 
-**Body**
-```json
-{
-  "session_id": "uuid-from-login-or-register"
-}
-```
+**Headers**
+| Key | Value |
+|-----|--------|
+| `x-session-id` | uuid from login/register |
+
+No body required.
 
 **Response `200`**
 ```json
@@ -197,26 +195,23 @@ Takes `session_id`, finds the user via JOIN (`sessions` + `users`), then deletes
 **Errors**
 | Status | When |
 |--------|------|
-| `400` | Missing `session_id` |
+| `400` | Missing `x-session-id` header |
 | `404` | Session not found or already logged out |
 
 ---
 
 ### `GET /api/auth/me`
 
-Returns the current user for a valid session. Uses `getUserBySessionId` (JOIN `sessions` + `users`).
+Returns the current user for a valid session. Route uses `sessionAuth` (and currently `authorize('SELLER')`).
 
-Pass the session id with either:
+**Headers**
+| Key | Value |
+|-----|--------|
+| `x-session-id` | uuid from login/register |
 
 ```http
 GET http://localhost:3000/api/auth/me
 x-session-id: uuid-from-login-or-register
-```
-
-or
-
-```http
-GET http://localhost:3000/api/auth/me?session_id=uuid-from-login-or-register
 ```
 
 **Response `200`**
@@ -236,8 +231,8 @@ GET http://localhost:3000/api/auth/me?session_id=uuid-from-login-or-register
 **Errors**
 | Status | When |
 |--------|------|
-| `400` | Missing session id |
-| `404` | Session not found or expired |
+| `401` | Missing/invalid/expired `x-session-id` |
+| `403` | Role not allowed (currently requires `SELLER`) |
 
 ---
 

@@ -1,3 +1,5 @@
+CREATE TYPE user_role AS ENUM ('CUSTOMER', 'ADMIN', 'SELLER');
+
 CREATE TABLE IF NOT EXISTS users (
     user_id BIGSERIAL PRIMARY KEY,
     email VARCHAR(255) NOT NULL UNIQUE,
@@ -5,7 +7,7 @@ CREATE TABLE IF NOT EXISTS users (
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
     phone_number VARCHAR(30),
-    role VARCHAR(20) NOT NULL
+    role user_role NOT NULL DEFAULT 'CUSTOMER'
 );
 
 CREATE TABLE IF NOT EXISTS sessions (
@@ -25,4 +27,3 @@ CREATE TABLE IF NOT EXISTS password_reset_codes (
     expires_at TIMESTAMPTZ NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-

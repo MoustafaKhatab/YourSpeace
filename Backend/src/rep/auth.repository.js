@@ -22,6 +22,17 @@ const getUserByEmail = async (email) => {
     return result.rows[0];
 };
 
+const getUserById = async (user_id) => {
+    const query = `
+        SELECT user_id, email, first_name, last_name, phone_number, role
+        FROM users
+        WHERE user_id = $1
+    `;
+    const values = [user_id];
+    const result = await pool.query(query, values);
+    return result.rows[0];
+};
+
 const getUserBySessionId = async (session_id) => {
     const query = `
         SELECT
@@ -35,6 +46,17 @@ const getUserBySessionId = async (session_id) => {
         INNER JOIN users u ON u.user_id = s.user_id
         WHERE s.session_id = $1
           AND s.expires_at > NOW()
+    `;
+    const values = [session_id];
+    const result = await pool.query(query, values);
+    return result.rows[0];
+};
+
+const getSessionBySessionId = async (session_id) => {
+    const query = `
+        SELECT id, user_id, session_id, expires_at, created_at, updated_at
+        FROM sessions
+        WHERE session_id = $1
     `;
     const values = [session_id];
     const result = await pool.query(query, values);
@@ -148,7 +170,9 @@ const deleteSessionBySessionId = async (session_id) => {
 module.exports = {
     createUser,
     getUserByEmail,
+    getUserById,
     getUserBySessionId,
+    getSessionBySessionId,
     createSession,
     createCodeVerifier,
     resetPasswordWithCode,

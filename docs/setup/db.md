@@ -217,9 +217,10 @@ Backend/
 ├── .env.example            # Template for teammates
 └── Database/
     ├── connection.js       # pg Pool export
-    ├── schema.sql          # CREATE TABLE statements
+    ├── schema.sql          # Types + CREATE TABLE only
     ├── apply_schema.js     # Used by npm run db
-    └── set_password.sql    # Helper to set postgres password
+    ├── set_password.sql    # One-time: set postgres password
+    └── migrate_role_enum.sql # One-time: VARCHAR role → user_role enum
 ```
 
 API usage: [api.md](api.md)
