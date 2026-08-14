@@ -7,7 +7,7 @@
 
 ## Current focus
 
-**Auth foundation (sessionful)** — register / login / logout / me / forget + reset password in place; email delivery for reset codes still pending.
+**Authentication epic** — sessionful auth APIs + middleware (`sessionAuth`, `authorize`) are in place; Gmail for reset codes still pending.
 
 **Jira Board**
 
@@ -19,15 +19,15 @@
 
 - Domain model documented
 - Database ERD documented (Mermaid + PNG/PDF)
-- Backend folder structure: `routes` → `controllers` → `services` → `rep`
+- Backend folder structure: `routes` → `controllers` → `services` → `rep` → middleware
 - Express + Nodemon; `GET /api/health`
 - PostgreSQL connection pool + startup `SELECT 1` check
-- Schema tables: `users`, `sessions`, `password_reset_codes` (`npm run db`)
+- Schema: `users` (role enum `user_role`), `sessions`, `password_reset_codes`
 - Auth APIs: register, login, logout, me, forget-password, reset-password
-- bcrypt password hashing + uuid session/reset tokens
-- Logout: find user by `session_id`, delete that session
-- Me: return current user from `session_id` (`getUserBySessionId`)
-- Forget password: JOIN session→user, create `code_verifier` (returned in JSON until Gmail)
+- bcrypt + uuid for passwords / session / reset codes
+- Session from **`x-session-id` header** (logout, me, sessionAuth) — not request body
+- Middleware: `sessionAuth` (expiry + attach `req.user`), `authorize('SELLER'|'ADMIN'|…)`
+- Forget password: by email → create `code_verifier` (JSON until Gmail)
 - Reset password: transaction (update password + delete sessions + mark code used)
 - Docs: Setup, DB, API reference, Progress
 
@@ -45,8 +45,9 @@
 | Database design / ER diagram | Done | [ERD.md](../design/ERD.md), [ERD.mmd](../design/ERD.mmd), [ERD.png](../design/ERD.png) |
 | Backend scaffold + health API | Done | `Backend/` |
 | PostgreSQL connection + schema | Done | `Backend/Database/`, [db.md](../setup/db.md) |
-| Sessionful auth (register/login/logout/me) | Done | `src/routes|controllers|services|rep` auth.*, [api.md](../setup/api.md) |
+| Sessionful auth (register/login/logout/me) | Done | auth routes/controllers/services/rep, [api.md](../setup/api.md) |
 | Password reset (code + transaction) | Done | `password_reset_codes`, forget/reset endpoints |
+| Session + role middleware | Done | `session_auth.js`, `authorize.js`, `user_role` enum |
 | Local setup + API docs | Done | [Setup.md](../setup/Setup.md), [api.md](../setup/api.md) |
 
 ---
@@ -59,4 +60,5 @@
 | This file (`progress/Progress.md`) | What has landed in the repo |
 | [api.md](../setup/api.md) | Current HTTP endpoints |
 | [db.md](../setup/db.md) | DB setup and implemented tables |
+| [Agile.md](../process/Agile.md) | Scrum process + epic list (stable) |
 | Other folders under `docs/` | Finished design/setup artifacts (mostly stable) |
