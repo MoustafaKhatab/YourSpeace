@@ -56,6 +56,15 @@ const getUserBySessionId = async (session_id) => {
     return { user: toSafeUser(user) };
 };
 
+const getUserByEmail = async (email) => {
+    const user = await authRepository.getUserByEmail(email);
+    if (!user) {
+        const error = new Error('User with this email not found');
+        error.statusCode = 404;
+        throw error;
+    }
+    return { user: toSafeUser(user) };
+};
 const createCodeVerifier = async (email) => {
     const code_verifier = uuidv4();
     const expires_at = new Date(Date.now() + 1000 * 60 * 60 * 24);
@@ -91,6 +100,7 @@ module.exports = {
     register,
     login,
     getUserBySessionId,
+    getUserByEmail,
     createCodeVerifier,
     resetPassword,
     logout,

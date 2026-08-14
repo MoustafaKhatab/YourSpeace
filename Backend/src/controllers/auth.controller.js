@@ -70,20 +70,18 @@ const login = async (req, res) => {
 
 const forgetPassword = async (req, res) => {
     try {
-        const { session_id } = req.body;
-        if (!session_id) {
-            return res.status(400).json({ message: 'Session ID is required' });
+        const { email } = req.body;
+        if (!email) {
+            return res.status(400).json({ message: 'Email is required' });
         }
 
-        const { user } = await authService.getUserBySessionId(session_id);
-        const { code_verifier, expires_at } = await authService.createCodeVerifier(user.email);
+        const { user } = await authService.getUserByEmail(email);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
 
-        return res.status(200).json({
-            message: 'Reset code created (dev only — later sent by email)',
-            email: user.email,
-            code_verifier,
-            expires_at,
-        });
+        const { code_verifier, expires_at } = await authService.createCodeVerifier(email);
+        return res.status(200).json({ code_verifier, expires_at });
     } catch (error) {
         if (error.statusCode === 400 || error.statusCode === 404) {
             return res.status(error.statusCode).json({ message: error.message });
@@ -144,7 +142,7 @@ const logout = async (req, res) => {
 
 const me = async (req, res) => {
     try {
-        const session_id = req.headers['x-session-id'] || req.query.session_id;
+        const session_id = req.query.session_id;
         if (!session_id) {
             return res.status(400).json({
                 message: 'Session ID is required (x-session-id header or session_id query)',
