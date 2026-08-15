@@ -17,7 +17,7 @@ Guide for PostgreSQL on this project.
 | Env file | `Backend/.env` (gitignored) |
 
 Full marketplace ERD (design): [ERD.md](../design/ERD.md)  
-What is **implemented in SQL so far** is listed below (auth foundation).
+What is **implemented in SQL so far** is listed below (auth + user addresses).
 
 ---
 
@@ -106,11 +106,13 @@ PGPASSWORD=postgres psql -h localhost -U postgres -d yourspeace -f Backend/Datab
 
 ---
 
-## Tables implemented so far
+## Types & tables implemented so far
 
-| Table | Purpose |
-|-------|---------|
+| Object | Purpose |
+|--------|---------|
+| `user_role` (ENUM) | `CUSTOMER` \| `ADMIN` \| `SELLER` |
 | `users` | Accounts (email, hashed_password, names, role, …) |
+| `addresses` | User shipping/profile addresses (1 user → many addresses) |
 | `sessions` | Sessionful auth tokens (`session_id`, `expires_at`) |
 | `password_reset_codes` | Dev/email reset codes (`code_verifier`, `used`, `expires_at`) |
 
@@ -119,7 +121,14 @@ PGPASSWORD=postgres psql -h localhost -U postgres -d yourspeace -f Backend/Datab
 - `email` unique  
 - `hashed_password`  
 - `first_name`, `last_name`, `phone_number`  
-- `role` (e.g. `CUSTOMER`)
+- `role` type `user_role` (default `CUSTOMER`)
+
+### `addresses`
+- `address_id` PK  
+- `user_id` FK → `users` (ON DELETE CASCADE)  
+- `address_line1`, `address_line2` (optional)  
+- `city`, `state`, `country`, `postal_code`  
+- `created_at`, `updated_at`
 
 ### `sessions`
 - `id` PK  
@@ -134,7 +143,8 @@ PGPASSWORD=postgres psql -h localhost -U postgres -d yourspeace -f Backend/Datab
 - `used` (boolean)  
 - `expires_at`, `created_at`
 
-Password reset uses a **transaction**: update password + delete user sessions + mark code `used`.
+Password reset uses a **transaction**: update password + delete user sessions + mark code `used`.  
+Address delete requires both `address_id` and owning `user_id` (ownership check).
 
 ---
 
@@ -151,10 +161,13 @@ Useful commands:
 ```sql
 \dt                          -- list tables
 \d users                     -- describe one table
+\d addresses
 \d sessions
 \d password_reset_codes
+\dT+ user_role               -- enum values
 
 SELECT * FROM users;
+SELECT * FROM addresses;
 SELECT * FROM sessions;
 SELECT * FROM password_reset_codes;
 SELECT * FROM users LIMIT 10;
@@ -165,8 +178,8 @@ One-shot from the shell:
 
 ```bash
 sudo -u postgres psql -d yourspeace -c "\dt"
-sudo -u postgres psql -d yourspeace -c "\d users"
-sudo -u postgres psql -d yourspeace -c "SELECT * FROM password_reset_codes;"
+sudo -u postgres psql -d yourspeace -c "\d addresses"
+sudo -u postgres psql -d yourspeace -c "SELECT * FROM addresses;"
 ```
 
 ---

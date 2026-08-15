@@ -202,7 +202,7 @@ No body required.
 
 ### `GET /api/auth/me`
 
-Returns the current user for a valid session. Route uses `sessionAuth` (and currently `authorize('SELLER')`).
+Returns the current user for a valid session. Route uses `sessionAuth` + `authorize('CUSTOMER')`.
 
 **Headers**
 | Key | Value |
@@ -232,25 +232,129 @@ x-session-id: uuid-from-login-or-register
 | Status | When |
 |--------|------|
 | `401` | Missing/invalid/expired `x-session-id` |
-| `403` | Role not allowed (currently requires `SELLER`) |
+| `403` | Role not allowed (requires `CUSTOMER`) |
+
+---
+
+## Address (CUSTOMER)
+
+All address routes require:
+
+| Header | Value |
+|--------|--------|
+| `x-session-id` | session from login/register |
+| `Content-Type` | `application/json` (for create) |
+
+Middleware: `sessionAuth` + `authorize('CUSTOMER')`.  
+`user_id` always comes from the session (`req.user`), never from the client body.
+
+### `POST /api/address/create`
+
+**Body**
+```json
+{
+  "address_line1": "123 Main St",
+  "address_line2": "Apt 4",
+  "city": "Cairo",
+  "state": "Cairo",
+  "country": "Egypt",
+  "postal_code": "11511"
+}
+```
+
+`address_line2` is optional.
+
+**Response `201`**
+```json
+{
+  "message": "Address created successfully",
+  "address": {
+    "address_id": "1",
+    "user_id": "1",
+    "address_line1": "123 Main St",
+    "address_line2": "Apt 4",
+    "city": "Cairo",
+    "state": "Cairo",
+    "country": "Egypt",
+    "postal_code": "11511"
+  }
+}
+```
+
+**Errors**
+| Status | When |
+|--------|------|
+| `400` | Missing required fields |
+| `401` | Missing/invalid session |
+| `403` | Not a CUSTOMER |
+
+---
+
+### `GET /api/address/get`
+
+Returns **all** addresses for the logged-in user.
+
+**Response `200`**
+```json
+{
+  "message": "Addresses fetched successfully",
+  "addresses": [
+    {
+      "address_id": "1",
+      "user_id": "1",
+      "address_line1": "123 Main St",
+      "address_line2": "Apt 4",
+      "city": "Cairo",
+      "state": "Cairo",
+      "country": "Egypt",
+      "postal_code": "11511"
+    }
+  ]
+}
+```
+
+Empty list returns `addresses: []` (still `200`).
+
+---
+
+### `DELETE /api/address/delete/:address_id`
+
+Deletes only if the address belongs to the logged-in user.
+
+Example: `DELETE http://localhost:3000/api/address/delete/1`
+
+**Response `200`**
+```json
+{
+  "message": "Address deleted successfully",
+  "address": { "address_id": "1" }
+}
+```
+
+**Errors**
+| Status | When |
+|--------|------|
+| `401` | Missing/invalid session |
+| `403` | Not a CUSTOMER |
+| `404` | Address not found or not owned by this user |
 
 ---
 
 ## Not implemented yet
 
 - Sending reset codes by email (Gmail)
+- Address update endpoint
 
 ---
 
 ## Layering
 
 ```text
-routes → controllers → services → rep (repository) → PostgreSQL
+Route → Middleware (sessionAuth / authorize) → Controller → Service → Repository → PostgreSQL
 ```
 
-| Layer | Auth files |
-|-------|------------|
-| Routes | `src/routes/auth.routes.js` |
-| Controllers | `src/controllers/auth.controller.js` |
-| Services | `src/services/auth.service.js` |
-| Repository | `src/rep/auth.repository.js` |
+| Feature | Routes | Controllers | Services | Repository |
+|---------|--------|-------------|----------|------------|
+| Auth | `auth.routes.js` | `auth.controller.js` | `auth.service.js` | `auth.repository.js` |
+| Address | `address.routes.js` | `address.controller.js` | `address.service.js` | `address.repository.js` |
+| Health | `health.routes.js` | `health.controller.js` | `health.service.js` | — |

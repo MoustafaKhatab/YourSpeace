@@ -7,7 +7,7 @@
 
 ## Current focus
 
-**Authentication epic** — sessionful auth APIs + middleware (`sessionAuth`, `authorize`) are in place; Gmail for reset codes still pending.
+**Users epic (addresses)** — customer address CRUD is in place on top of sessionful auth. Next: more user/profile features or Stores/Products.
 
 **Jira Board**
 
@@ -22,13 +22,15 @@
 - Backend folder structure: `routes` → `controllers` → `services` → `rep` → middleware
 - Express + Nodemon; `GET /api/health`
 - PostgreSQL connection pool + startup `SELECT 1` check
-- Schema: `users` (role enum `user_role`), `sessions`, `password_reset_codes`
+- Schema: `users` (`user_role` enum), `addresses`, `sessions`, `password_reset_codes`
 - Auth APIs: register, login, logout, me, forget-password, reset-password
+- Address APIs: create, get (list), delete — protected with `sessionAuth` + `authorize('CUSTOMER')`
+- Address ownership: create/get/delete use `req.user.user_id` (not client-supplied user id)
 - bcrypt + uuid for passwords / session / reset codes
-- Session from **`x-session-id` header** (logout, me, sessionAuth) — not request body
-- Middleware: `sessionAuth` (expiry + attach `req.user`), `authorize('SELLER'|'ADMIN'|…)`
-- Forget password: by email → create `code_verifier` (JSON until Gmail)
-- Reset password: transaction (update password + delete sessions + mark code used)
+- Session from **`x-session-id` header** (logout, me, sessionAuth, address routes)
+- Middleware: `sessionAuth`, `authorize(role)`
+- Forget password: by email → `code_verifier` (JSON until Gmail)
+- Reset password: transaction (password + delete sessions + mark code used)
 - Docs: Setup, DB, API reference, Progress
 
 ---
@@ -45,9 +47,10 @@
 | Database design / ER diagram | Done | [ERD.md](../design/ERD.md), [ERD.mmd](../design/ERD.mmd), [ERD.png](../design/ERD.png) |
 | Backend scaffold + health API | Done | `Backend/` |
 | PostgreSQL connection + schema | Done | `Backend/Database/`, [db.md](../setup/db.md) |
-| Sessionful auth (register/login/logout/me) | Done | auth routes/controllers/services/rep, [api.md](../setup/api.md) |
-| Password reset (code + transaction) | Done | `password_reset_codes`, forget/reset endpoints |
-| Session + role middleware | Done | `session_auth.js`, `authorize.js`, `user_role` enum |
+| Sessionful auth (register/login/logout/me) | Done | auth.*, [api.md](../setup/api.md) |
+| Password reset (code + transaction) | Done | `password_reset_codes`, forget/reset |
+| Session + role middleware | Done | `session_auth.js`, `authorize.js`, `user_role` |
+| User addresses CRUD | Done | address.*, `addresses` table, [api.md](../setup/api.md) |
 | Local setup + API docs | Done | [Setup.md](../setup/Setup.md), [api.md](../setup/api.md) |
 
 ---

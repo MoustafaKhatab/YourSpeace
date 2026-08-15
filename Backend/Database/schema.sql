@@ -1,4 +1,7 @@
+DO $$ BEGIN
 CREATE TYPE user_role AS ENUM ('CUSTOMER', 'ADMIN', 'SELLER');
+EXCEPTION WHEN DUPLICATE_OBJECT THEN NULL;
+END $$;
 
 CREATE TABLE IF NOT EXISTS users (
     user_id BIGSERIAL PRIMARY KEY,
@@ -8,6 +11,19 @@ CREATE TABLE IF NOT EXISTS users (
     last_name VARCHAR(100) NOT NULL,
     phone_number VARCHAR(30),
     role user_role NOT NULL DEFAULT 'CUSTOMER'
+);
+
+CREATE TABLE IF NOT EXISTS addresses (
+    address_id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    address_line1 VARCHAR(255) NOT NULL,
+    address_line2 VARCHAR(255),
+    city VARCHAR(100) NOT NULL,
+    state VARCHAR(100) NOT NULL,
+    country VARCHAR(100) NOT NULL,
+    postal_code VARCHAR(20) NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS sessions (
@@ -27,3 +43,5 @@ CREATE TABLE IF NOT EXISTS password_reset_codes (
     expires_at TIMESTAMPTZ NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+

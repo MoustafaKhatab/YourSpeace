@@ -33,7 +33,7 @@ Brief guide for running the project so far.
 cd Backend
 npm install
 cp .env.example .env   # then edit DB_PASSWORD if needed
-npm run db             # apply schema (users, sessions, password_reset_codes)
+npm run db             # apply schema (users, addresses, sessions, password_reset_codes)
 npm run dev
 ```
 
@@ -51,12 +51,16 @@ Server default: `http://localhost:3000`
 ### Quick checks
 
 ```text
-GET  http://localhost:3000/api/health
-POST http://localhost:3000/api/auth/register
-POST http://localhost:3000/api/auth/login
-POST http://localhost:3000/api/auth/logout
-GET  http://localhost:3000/api/auth/me
+GET    http://localhost:3000/api/health
+POST   http://localhost:3000/api/auth/register
+POST   http://localhost:3000/api/auth/login
+GET    http://localhost:3000/api/auth/me
+POST   http://localhost:3000/api/address/create
+GET    http://localhost:3000/api/address/get
+DELETE http://localhost:3000/api/address/delete/:address_id
 ```
+
+Protected routes need header: `x-session-id: <session_id from login/register>`.
 
 API endpoints are tested with **Postman**. Full request/response shapes: [api.md](api.md).
 
@@ -86,23 +90,25 @@ YourSpeace/
     │   ├── connection.js
     │   ├── schema.sql
     │   ├── apply_schema.js
-    │   └── set_password.sql
+    │   ├── set_password.sql
+    │   └── migrate_role_enum.sql
     └── src/
         ├── app.js
-        ├── server.js          # Entry + DB connectivity check
-        ├── routes/            # health + auth
+        ├── server.js
+        ├── routes/            # health, auth, address
         ├── controllers/
         ├── services/
-        ├── rep/               # Repository (SQL / transactions)
-        └── middleware/
+        ├── rep/               # Repository (SQL)
+        └── middleware/        # sessionAuth, authorize
 ```
 
 ### Backend request flow
 
 ```text
-Route → Controller → Service → Repository (rep) → PostgreSQL
+Route → Middleware (optional) → Controller → Service → Repository (rep) → PostgreSQL
 ```
 
 Examples:
 - `/api/health` → `health.controller` → `health.service`
 - `/api/auth/*` → `auth.controller` → `auth.service` → `auth.repository`
+- `/api/address/*` → `sessionAuth` + `authorize('CUSTOMER')` → `address.controller` → `address.service` → `address.repository`
