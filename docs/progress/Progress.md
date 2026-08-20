@@ -7,7 +7,13 @@
 
 ## Current focus
 
-**Users epic** — profile update + full address CRUD are in place. Next: email change via Gmail verification, or Stores/Products.
+**Sprint 2 – Users (wrapping up)** — profile + address work is Done on the board. Still To Do:
+
+| Ticket | Item | Status |
+|--------|------|--------|
+| SCRUM-21 | Implement Change Password | To Do |
+| SCRUM-23 | Validation and authorization for these operations | To Do |
+| SCRUM-24 | API testing | To Do |
 
 **Jira Board**
 
@@ -17,22 +23,9 @@
 
 ## Latest completed
 
-- Domain model documented
-- Database ERD documented (Mermaid + PNG/PDF)
-- Backend folder structure: `routes` → `controllers` → `services` → `rep` → middleware
-- Express + Nodemon; `GET /api/health`
-- PostgreSQL connection pool + startup `SELECT 1` check
-- Schema: `users` (`user_role` enum), `addresses`, `sessions`, `password_reset_codes`
-- Auth APIs: register, login, logout, me, forget-password, reset-password
-- Address APIs: create, get (list), update, delete — `sessionAuth` + `authorize('CUSTOMER')`
-- Address ownership: all mutations use `req.user.user_id` (not client-supplied user id)
-- Customer profile: `PUT /api/customer/me` (name + phone only; email rejected until Gmail flow)
-- bcrypt + uuid for passwords / session / reset codes
-- Session from **`x-session-id` header** (logout, me, sessionAuth, address, customer)
-- Middleware: `sessionAuth`, `authorize(role)`
-- Forget password: by email → `code_verifier` (JSON until Gmail)
-- Reset password: transaction (password + delete sessions + mark code used)
-- Docs: Setup, DB, API reference, Progress
+- Sprint 2 (Done on board): customer profile retrieval/update, address update, logout
+- Sprint 1: sessionful auth, password reset, session/role middleware
+- Sprint 0: foundation, domain/ERD, backend scaffold, PostgreSQL
 
 ---
 
@@ -46,14 +39,37 @@
 | Requirements / Agile process | Done | [Agile.md](../process/Agile.md) |
 | Domain model | Done | [Domain_Model.md](../design/Domain_Model.md) |
 | Database design / ER diagram | Done | [ERD.md](../design/ERD.md), [ERD.mmd](../design/ERD.mmd), [ERD.png](../design/ERD.png) |
-| Backend scaffold + health API | Done | `Backend/` |
-| PostgreSQL connection + schema | Done | `Backend/Database/`, [db.md](../setup/db.md) |
-| Sessionful auth (register/login/logout/me) | Done | auth.*, [api.md](../setup/api.md) |
-| Password reset (code + transaction) | Done | `password_reset_codes`, forget/reset |
-| Session + role middleware | Done | `session_auth.js`, `authorize.js`, `user_role` |
-| User addresses CRUD | Done | address.*, `addresses` table, [api.md](../setup/api.md) |
-| Customer profile update | Done | customer.*, `PUT /customer/me` (no email change) |
-| Local setup + API docs | Done | [Setup.md](../setup/Setup.md), [api.md](../setup/api.md) |
+| Backend scaffold + health API | Done | `Backend/`, `GET /api/health` |
+| PostgreSQL connection + schema apply | Done | `Backend/Database/`, [db.md](../setup/db.md) |
+| Local setup docs | Done | [Setup.md](../setup/Setup.md) |
+
+---
+
+### Sprint 1 – Authentication
+
+| Item | Status | Artifact |
+|------|--------|----------|
+| Schema: `users`, `sessions`, `password_reset_codes`, `user_role` | Done | `schema.sql`, [db.md](../setup/db.md) |
+| Register / login (sessionful) | Done | auth routes/services/rep |
+| Logout + `GET /auth/me` | Done | `x-session-id` header |
+| Forget / reset password | Done | `code_verifier` (Gmail later) |
+| Middleware: `sessionAuth`, `authorize` | Done | `session_auth.js`, `authorize.js` |
+| Auth API docs | Done | [api.md](../setup/api.md) |
+
+---
+
+### Sprint 2 – Users
+
+| Item | Status | Artifact |
+|------|--------|----------|
+| Customer profile retrieval (SCRUM-18) | Done | `GET /api/auth/me` |
+| Customer profile update (SCRUM-19) | Done | `PUT /api/customer/me` |
+| Address update (SCRUM-20) | Done | `PUT /api/address/update/:address_id` |
+| Customer logout (SCRUM-22) | Done | `POST /api/auth/logout` |
+| Address create / get / delete | Done | address.*, [api.md](../setup/api.md) |
+| Change password (SCRUM-21) | To Do | — |
+| Validation and authorization (SCRUM-23) | To Do | — |
+| API testing (SCRUM-24) | To Do | — |
 
 ---
 
