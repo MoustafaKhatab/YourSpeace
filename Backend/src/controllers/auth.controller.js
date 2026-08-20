@@ -150,7 +150,7 @@ const me = async (req, res) => {
         const session_id = req.headers['x-session-id'];
         if (!session_id) {
             return res.status(400).json({
-                message: 'Session ID is required (x-session-id header)',
+                message: 'Session ID is required',
             });
         }
 
