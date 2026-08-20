@@ -55,8 +55,10 @@ GET    http://localhost:3000/api/health
 POST   http://localhost:3000/api/auth/register
 POST   http://localhost:3000/api/auth/login
 GET    http://localhost:3000/api/auth/me
+PUT    http://localhost:3000/api/customer/me
 POST   http://localhost:3000/api/address/create
 GET    http://localhost:3000/api/address/get
+PUT    http://localhost:3000/api/address/update/:address_id
 DELETE http://localhost:3000/api/address/delete/:address_id
 ```
 
@@ -95,7 +97,7 @@ YourSpeace/
     └── src/
         ├── app.js
         ├── server.js
-        ├── routes/            # health, auth, address
+        ├── routes/            # health, auth, address, customer
         ├── controllers/
         ├── services/
         ├── rep/               # Repository (SQL)
@@ -111,4 +113,5 @@ Route → Middleware (optional) → Controller → Service → Repository (rep) 
 Examples:
 - `/api/health` → `health.controller` → `health.service`
 - `/api/auth/*` → `auth.controller` → `auth.service` → `auth.repository`
+- `/api/customer/*` → `sessionAuth` → `customer.controller` → `customer.service` → `customer.repository`
 - `/api/address/*` → `sessionAuth` + `authorize('CUSTOMER')` → `address.controller` → `address.service` → `address.repository`

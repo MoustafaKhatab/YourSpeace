@@ -2,10 +2,7 @@ const addressService = require('../services/address.service');
 
 const createAddress = async (req, res) => {
     try {
-        const user_id = req.user.user_id;
-        if (!user_id) {
-            return res.status(401).json({ message: 'Unauthorized' });
-        }
+        const { user_id } = req.user;
 
         const { address_line1, address_line2, city, state, country, postal_code } = req.body;
         if (!address_line1 || !city || !state || !country || !postal_code) {
@@ -35,10 +32,7 @@ const createAddress = async (req, res) => {
 
 const getAddressByUserId = async (req, res) => {
     try {
-        const user_id = req.user.user_id;
-        if (!user_id) {
-            return res.status(401).json({ message: 'Unauthorized' });
-        }
+        const { user_id } = req.user;
 
         const addresses = await addressService.getAddressByUserId(user_id);
         return res.status(200).json({
@@ -54,11 +48,8 @@ const getAddressByUserId = async (req, res) => {
 const deleteAddress = async (req, res) => {
     try {
         const { address_id } = req.params;
-        const user_id = req.user.user_id;
+        const { user_id } = req.user;
 
-        if (!user_id) {
-            return res.status(401).json({ message: 'Unauthorized' });
-        }
         if (!address_id) {
             return res.status(400).json({ message: 'Address ID is required' });
         }
@@ -75,8 +66,36 @@ const deleteAddress = async (req, res) => {
     }
 };
 
+const updateAddress = async (req, res) =>{
+    try {
+        
+        const { address_id } = req.params;
+        const { user_id } = req.user;
+        const { address_line1, address_line2, city, state, country, postal_code } = req.body;
+        if(!address_line1 || !city || !state || !country || !postal_code) {
+            return res.status(400).json({ message: 'address_line1, city, state, country, and postal_code are required' });
+        }
+
+        if(!address_id) {
+            return res.status(400).json({ message: 'Address ID is required' });
+        }
+
+        const address = await addressService.updateAddressByAddressIdAndUserId(user_id, address_id, address_line1, address_line2 || null, city, state, country, postal_code);
+        return res.status(200).json({ message: 'Address updated successfully', address });
+
+    } catch (error) {
+        if (error.statusCode === 404) {
+            return res.status(404).json({ message: error.message });
+        }
+
+        console.error('Update address error:', error.message);
+        return res.status(500).json({ message: 'Failed to update address' });
+    }
+};
+
 module.exports = {
     createAddress,
     getAddressByUserId,
     deleteAddress,
+    updateAddress
 };

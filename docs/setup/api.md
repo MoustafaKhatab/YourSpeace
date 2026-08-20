@@ -243,7 +243,7 @@ All address routes require:
 | Header | Value |
 |--------|--------|
 | `x-session-id` | session from login/register |
-| `Content-Type` | `application/json` (for create) |
+| `Content-Type` | `application/json` (for create / update) |
 
 Middleware: `sessionAuth` + `authorize('CUSTOMER')`.  
 `user_id` always comes from the session (`req.user`), never from the client body.
@@ -317,6 +317,53 @@ Empty list returns `addresses: []` (still `200`).
 
 ---
 
+### `PUT /api/address/update/:address_id`
+
+Updates an address only if it belongs to the logged-in user.
+
+Example: `PUT http://localhost:3000/api/address/update/1`
+
+**Body**
+```json
+{
+  "address_line1": "456 New St",
+  "address_line2": "Floor 2",
+  "city": "Alexandria",
+  "state": "Alexandria",
+  "country": "Egypt",
+  "postal_code": "21500"
+}
+```
+
+`address_line2` is optional.
+
+**Response `200`**
+```json
+{
+  "message": "Address updated successfully",
+  "address": {
+    "address_id": "1",
+    "user_id": "1",
+    "address_line1": "456 New St",
+    "address_line2": "Floor 2",
+    "city": "Alexandria",
+    "state": "Alexandria",
+    "country": "Egypt",
+    "postal_code": "21500"
+  }
+}
+```
+
+**Errors**
+| Status | When |
+|--------|------|
+| `400` | Missing required fields |
+| `401` | Missing/invalid session |
+| `403` | Not a CUSTOMER |
+| `404` | Address not found or not owned by this user |
+
+---
+
 ### `DELETE /api/address/delete/:address_id`
 
 Deletes only if the address belongs to the logged-in user.
@@ -340,10 +387,57 @@ Example: `DELETE http://localhost:3000/api/address/delete/1`
 
 ---
 
+## Customer profile
+
+Requires `x-session-id` (via `sessionAuth`). Updates **name and phone only** — email changes are deferred to a later Gmail/verification flow.
+
+### `PUT /api/customer/me`
+
+**Headers**
+| Key | Value |
+|-----|--------|
+| `x-session-id` | session from login/register |
+| `Content-Type` | `application/json` |
+
+**Body**
+```json
+{
+  "first_name": "Moustafa",
+  "last_name": "Updated",
+  "phone_number": "01012345678"
+}
+```
+
+Do **not** send `email` in the body.
+
+**Response `200`**
+```json
+{
+  "message": "Customer updated successfully",
+  "customer": {
+    "user_id": "1",
+    "first_name": "Moustafa",
+    "last_name": "Updated",
+    "email": "user@example.com",
+    "phone_number": "01012345678"
+  }
+}
+```
+
+`email` is returned as read-only (not updated).
+
+**Errors**
+| Status | When |
+|--------|------|
+| `400` | Missing required fields, or `email` was included in the body |
+| `401` | Missing/invalid session |
+
+---
+
 ## Not implemented yet
 
 - Sending reset codes by email (Gmail)
-- Address update endpoint
+- Changing account email (verification flow)
 
 ---
 
@@ -357,4 +451,5 @@ Route → Middleware (sessionAuth / authorize) → Controller → Service → Re
 |---------|--------|-------------|----------|------------|
 | Auth | `auth.routes.js` | `auth.controller.js` | `auth.service.js` | `auth.repository.js` |
 | Address | `address.routes.js` | `address.controller.js` | `address.service.js` | `address.repository.js` |
+| Customer | `customer.routes.js` | `customer.controller.js` | `customer.service.js` | `customer.repository.js` |
 | Health | `health.routes.js` | `health.controller.js` | `health.service.js` | — |

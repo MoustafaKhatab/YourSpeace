@@ -27,7 +27,7 @@ This project follows an **Agile Scrum** workflow. Process details and the epic l
 | [Progress](docs/progress/Progress.md) | Living | Sprint focus and completed work log |
 | [Setup](docs/setup/Setup.md) | Current | How to install and run the backend |
 | [Database Setup](docs/setup/db.md) | Current | PostgreSQL, tables, `.env`, `npm run db` |
-| [API Reference](docs/setup/api.md) | Current | Health, auth, and address endpoints (Postman) |
+| [API Reference](docs/setup/api.md) | Current | Health, auth, customer, and address endpoints (Postman) |
 | [Domain Model](docs/design/Domain_Model.md) | Done | Business entities and relationships |
 | [Database Design / ERD](docs/design/ERD.md) | Done | Full marketplace ER diagram (design) |
 | [Agile Process](docs/process/Agile.md) | Done | Scrum methodology and product backlog epics |

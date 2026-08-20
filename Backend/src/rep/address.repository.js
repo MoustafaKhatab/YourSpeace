@@ -34,8 +34,27 @@ const deleteAddress = async (user_id, address_id) => {
     return result.rows[0];
 };
 
+const updateAddressByAddressIdAndUserId = async (user_id, address_id, address_line1, address_line2, city, state, country, postal_code) =>{
+    const query = `
+    UPDATE addresses 
+    SET address_line1 =$1, 
+    address_line2 = $2, 
+    city = $3,
+    state = $4,
+    country = $5,
+    postal_code = $6
+    WHERE address_id = $7 AND user_id = $8
+    RETURNING address_id, user_id, address_line1, address_line2, city, state, country, postal_code
+    `
+    const values = [address_line1, address_line2, city, state, country, postal_code, address_id, user_id];
+    const result = await pool.query(query, values);
+    return result.rows[0];
+
+}
+
 module.exports = {
     createAddress,
     getAddressByUserId,
     deleteAddress,
+    updateAddressByAddressIdAndUserId
 };

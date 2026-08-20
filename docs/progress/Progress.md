@@ -7,7 +7,7 @@
 
 ## Current focus
 
-**Users epic (addresses)** — customer address CRUD is in place on top of sessionful auth. Next: more user/profile features or Stores/Products.
+**Users epic** — profile update + full address CRUD are in place. Next: email change via Gmail verification, or Stores/Products.
 
 **Jira Board**
 
@@ -24,10 +24,11 @@
 - PostgreSQL connection pool + startup `SELECT 1` check
 - Schema: `users` (`user_role` enum), `addresses`, `sessions`, `password_reset_codes`
 - Auth APIs: register, login, logout, me, forget-password, reset-password
-- Address APIs: create, get (list), delete — protected with `sessionAuth` + `authorize('CUSTOMER')`
-- Address ownership: create/get/delete use `req.user.user_id` (not client-supplied user id)
+- Address APIs: create, get (list), update, delete — `sessionAuth` + `authorize('CUSTOMER')`
+- Address ownership: all mutations use `req.user.user_id` (not client-supplied user id)
+- Customer profile: `PUT /api/customer/me` (name + phone only; email rejected until Gmail flow)
 - bcrypt + uuid for passwords / session / reset codes
-- Session from **`x-session-id` header** (logout, me, sessionAuth, address routes)
+- Session from **`x-session-id` header** (logout, me, sessionAuth, address, customer)
 - Middleware: `sessionAuth`, `authorize(role)`
 - Forget password: by email → `code_verifier` (JSON until Gmail)
 - Reset password: transaction (password + delete sessions + mark code used)
@@ -51,6 +52,7 @@
 | Password reset (code + transaction) | Done | `password_reset_codes`, forget/reset |
 | Session + role middleware | Done | `session_auth.js`, `authorize.js`, `user_role` |
 | User addresses CRUD | Done | address.*, `addresses` table, [api.md](../setup/api.md) |
+| Customer profile update | Done | customer.*, `PUT /customer/me` (no email change) |
 | Local setup + API docs | Done | [Setup.md](../setup/Setup.md), [api.md](../setup/api.md) |
 
 ---

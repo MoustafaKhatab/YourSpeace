@@ -6,6 +6,7 @@ const router = express.Router();
 
 router.post('/create', sessionAuth, authorize('CUSTOMER'), addressController.createAddress);
 router.get('/get', sessionAuth, authorize('CUSTOMER'), addressController.getAddressByUserId);
+router.put('/update/:address_id', sessionAuth, authorize('CUSTOMER'), addressController.updateAddress);
 router.delete('/delete/:address_id', sessionAuth, authorize('CUSTOMER'), addressController.deleteAddress);
 
 module.exports = router;
