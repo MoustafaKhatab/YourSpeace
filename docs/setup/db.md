@@ -40,7 +40,7 @@ DB_NAME=yourspeace
 DB_USER=postgres
 DB_PASSWORD=postgres
 
-# Gmail App Password — forget-password emails (see Setup.md)
+# Gmail App Password — forget-password / change-password emails (see Setup.md)
 GMAIL_USER=your-email@gmail.com
 GMAIL_APP_PASSWORD=your-16-char-app-password
 ```
@@ -119,7 +119,7 @@ PGPASSWORD=postgres psql -h localhost -U postgres -d yourspeace -f Backend/Datab
 | `users` | Accounts (email, hashed_password, names, role, …) |
 | `addresses` | User shipping/profile addresses (1 user → many addresses) |
 | `sessions` | Sessionful auth tokens (`session_id`, `expires_at`) |
-| `password_reset_codes` | Dev/email reset codes (`code_verifier`, `used`, `expires_at`) |
+| `password_reset_codes` | Email codes for forget-password and change-password verify (`code_verifier`, `used`, `expires_at`) |
 
 ### `users`
 - `user_id` PK  

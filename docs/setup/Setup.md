@@ -44,9 +44,9 @@ npm run dev
 | `npm start` | Start server with Node |
 | `npm run db` | Apply `Database/schema.sql` to PostgreSQL |
 
-### Gmail (password reset emails)
+### Gmail (reset / change-password codes)
 
-Forget-password sends the reset code by email. In `Backend/.env`:
+`forget-password` emails a `code_verifier` (Nodemailer + Gmail). Logged-in users then call `verify-code` with that code. In `Backend/.env`:
 
 ```env
 GMAIL_USER=your-email@gmail.com
@@ -67,6 +67,9 @@ GET    http://localhost:3000/api/health
 POST   http://localhost:3000/api/auth/register
 POST   http://localhost:3000/api/auth/login
 GET    http://localhost:3000/api/auth/me
+POST   http://localhost:3000/api/auth/forget-password
+POST   http://localhost:3000/api/auth/verify-code
+POST   http://localhost:3000/api/auth/reset-password
 PUT    http://localhost:3000/api/customer/me
 POST   http://localhost:3000/api/address/create
 GET    http://localhost:3000/api/address/get
@@ -74,7 +77,7 @@ PUT    http://localhost:3000/api/address/update/:address_id
 DELETE http://localhost:3000/api/address/delete/:address_id
 ```
 
-Protected routes need header: `x-session-id: <session_id from login/register>`.
+Protected routes need header: `x-session-id: <session_id from login/register>` (`verify-code`, `me`, customer, address).
 
 API endpoints are tested with **Postman**. Full request/response shapes: [api.md](api.md).
 
@@ -125,6 +128,6 @@ Route → Middleware (optional) → Controller → Service → Repository (rep) 
 
 Examples:
 - `/api/health` → `health.controller` → `health.service`
-- `/api/auth/*` → `auth.controller` → `auth.service` → `auth.repository` (+ `mailer` on forget-password)
+- `/api/auth/*` → `auth.controller` → `auth.service` → `auth.repository` (+ `mailer` on forget-password; `sessionAuth` on verify-code / me)
 - `/api/customer/*` → `sessionAuth` → `customer.controller` → `customer.service` → `customer.repository`
 - `/api/address/*` → `sessionAuth` + `authorize('CUSTOMER')` → `address.controller` → `address.service` → `address.repository`

@@ -1,0 +1,20 @@
+---
+description: Always sync docs/Progress when features land
+alwaysApply: true
+---
+
+# Documentation sync (required)
+
+Whenever you implement, fix, or complete a feature/API in this repo:
+
+1. Update **all related** docs in the same turn — do not leave docs for later.
+2. Check and update as needed:
+   - `docs/progress/Progress.md` (latest completed, sprint tables, To Do / SCRUM tickets)
+   - `docs/setup/api.md` (endpoints, request/response, auth flow overview)
+   - `docs/setup/Setup.md` (quick checks, structure, env/tech if relevant)
+   - `docs/setup/db.md` (tables/env if schema or env changed)
+   - `README.md` (tech stack / API blurb if relevant)
+3. Match docs to **actual** behavior (session vs public, what JSON returns, what is not implemented).
+4. Prefer updating docs in the **same commit** as the feature when the user asks to commit.
+
+Do not treat Progress-only or api-only updates as “docs done” if Setup quick checks or the auth flow overview are still stale.

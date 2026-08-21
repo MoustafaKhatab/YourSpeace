@@ -34,6 +34,7 @@ Register / Login  →  returns user + session
 Logout            →  x-session-id header → find user → delete that session
 Me                →  x-session-id header (+ sessionAuth) → return current user
 Forget password   →  email in body → create code_verifier → send by Gmail (not in JSON)
+Verify code       →  x-session-id + code_verifier (change-password step; does not consume code)
 Reset password    →  email + code_verifier (from inbox) + new_password
                     (transaction: update password, delete sessions, mark code used)
 ```
@@ -484,7 +485,8 @@ Do **not** send `email` in the body.
 Route → Middleware (sessionAuth / authorize) → Controller → Service → Repository → PostgreSQL
 ```
 
-Mail helper (used by forget-password): `src/utils/mailer.js` (`sendMail` via Nodemailer + Gmail).
+Mail helper (forget-password emails): `src/utils/mailer.js` (`sendMail` via Nodemailer + Gmail).  
+Change-password check: `POST /api/auth/verify-code` with `sessionAuth` (code not consumed).
 
 | Feature | Routes | Controllers | Services | Repository |
 |---------|--------|-------------|----------|------------|
