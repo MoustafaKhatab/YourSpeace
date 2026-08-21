@@ -8,7 +8,12 @@ router.post('/register', authController.register);
 router.post('/login', authController.login);
 router.post('/forget-password', authController.forgetPassword);
 router.post('/reset-password', authController.resetPassword);
+
+// Change password (any logged-in role — CUSTOMER / SELLER / ADMIN)
+router.post('/change-password/request', sessionAuth, authController.requestChangePassword);
 router.post('/verify-code', sessionAuth, authController.verifyCode);
+router.post('/change-password', sessionAuth, authController.changePassword);
+
 router.post('/logout', authController.logout);
 router.get('/me', sessionAuth, authorize('CUSTOMER'), authController.me);
 

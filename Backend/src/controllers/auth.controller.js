@@ -1,10 +1,12 @@
 const authService = require('../services/auth.service');
 const mailer = require('../utils/mailer');
-
+const { buildEmail } = require('../utils/emailTemplates');
 
 const isValidEmail = (email) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 };
+
+const MIN_PASSWORD_LENGTH = 8;
 
 const register = async (req, res) => {
     try {
@@ -76,6 +78,9 @@ const forgetPassword = async (req, res) => {
         if (!email) {
             return res.status(400).json({ message: 'Email is required' });
         }
+        if (!isValidEmail(email)) {
+            return res.status(400).json({ message: 'Invalid email' });
+        }
 
         const { user } = await authService.getUserByEmail(email);
         if (!user) {
@@ -83,16 +88,20 @@ const forgetPassword = async (req, res) => {
         }
 
         const { code_verifier, expires_at } = await authService.createCodeVerifier(email);
-       
-        await mailer.sendMail({
-            to: email,
-            subject: 'Reset Password',
-            text: `Your reset password code is ${code_verifier} and it will expire in ${ new Date(expires_at).toLocaleString()} minutes`,
-            html: `<p>Your reset password code is ${code_verifier} and it will expire in ${ new Date(expires_at).toLocaleString()} minutes </p>`,
+        const mail = buildEmail('forgetPassword', {
+            code_verifier,
+            expires_at,
+            first_name: user.first_name,
         });
 
-        console.log('Email sent successfully');
-        return res.status(200).json({ message: 'code_verifier and expires_at sent to email successfully' });
+        await mailer.sendMail({
+            to: email,
+            subject: mail.subject,
+            text: mail.text,
+            html: mail.html,
+        });
+
+        return res.status(200).json({ message: 'Reset code sent to email successfully' });
     } catch (error) {
         if (error.statusCode === 400 || error.statusCode === 404) {
             return res.status(error.statusCode).json({ message: error.message });
@@ -114,6 +123,11 @@ const resetPassword = async (req, res) => {
         }
         if (!isValidEmail(email)) {
             return res.status(400).json({ message: 'Invalid email' });
+        }
+        if (String(new_password).length < MIN_PASSWORD_LENGTH) {
+            return res.status(400).json({
+                message: `new_password must be at least ${MIN_PASSWORD_LENGTH} characters`,
+            });
         }
 
         const { user } = await authService.resetPassword(email, code_verifier, new_password);
@@ -203,6 +217,100 @@ const verifyCode = async (req, res) => {
     }
 };
 
+/** Any logged-in role: send change-password code to session user's email only. */
+const requestChangePassword = async (req, res) => {
+    try {
+        const user = req.user;
+        if (!user) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
+
+        const { code_verifier, expires_at } = await authService.createCodeVerifier(user.email);
+        const mail = buildEmail('changePassword', {
+            code_verifier,
+            expires_at,
+            first_name: user.first_name,
+        });
+
+        await mailer.sendMail({
+            to: user.email,
+            subject: mail.subject,
+            text: mail.text,
+            html: mail.html,
+        });
+
+        return res.status(200).json({
+            message: 'Change password code sent to your email successfully',
+        });
+    } catch (error) {
+        if (error.statusCode === 400 || error.statusCode === 404) {
+            return res.status(error.statusCode).json({ message: error.message });
+        }
+
+        console.error('Request change password error:', error.message);
+        return res.status(500).json({ message: 'Failed to send change password code' });
+    }
+};
+
+/**
+ * Any logged-in role: apply new password with verified code.
+ * Email always from session (never from body). Invalidates all sessions.
+ */
+const changePassword = async (req, res) => {
+    try {
+        const user = req.user;
+        if (!user) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
+
+        const { code_verifier, new_password, confirm_password } = req.body;
+
+        if (!code_verifier || !new_password) {
+            return res.status(400).json({
+                message: 'code_verifier and new_password are required',
+            });
+        }
+        if (confirm_password !== undefined && confirm_password !== new_password) {
+            return res.status(400).json({ message: 'new_password and confirm_password do not match' });
+        }
+        if (String(new_password).length < MIN_PASSWORD_LENGTH) {
+            return res.status(400).json({
+                message: `new_password must be at least ${MIN_PASSWORD_LENGTH} characters`,
+            });
+        }
+
+        const { user: updatedUser } = await authService.changePassword(
+            user.email,
+            code_verifier,
+            new_password
+        );
+
+        try {
+            const mail = buildEmail('passwordChanged', { first_name: updatedUser.first_name });
+            await mailer.sendMail({
+                to: updatedUser.email,
+                subject: mail.subject,
+                text: mail.text,
+                html: mail.html,
+            });
+        } catch (mailError) {
+            console.error('Password-changed notification email failed:', mailError.message);
+        }
+
+        return res.status(200).json({
+            message: 'Password changed successfully. Please log in again.',
+            user: updatedUser,
+        });
+    } catch (error) {
+        if (error.statusCode === 400 || error.statusCode === 404) {
+            return res.status(error.statusCode).json({ message: error.message });
+        }
+
+        console.error('Change password error:', error.message);
+        return res.status(500).json({ message: 'Failed to change password' });
+    }
+};
+
 module.exports = {
     register,
     login,
@@ -211,4 +319,6 @@ module.exports = {
     logout,
     me,
     verifyCode,
+    requestChangePassword,
+    changePassword,
 };

@@ -46,7 +46,12 @@ npm run dev
 
 ### Gmail (reset / change-password codes)
 
-`forget-password` emails a `code_verifier` (Nodemailer + Gmail). Logged-in users then call `verify-code` with that code. In `Backend/.env`:
+Emails use Nodemailer + HTML templates in `src/utils/emailTemplates.js`.  
+- `forget-password` → `forgetPassword` template  
+- `change-password/request` → `changePassword` template (session user’s email only)  
+- after successful change → `passwordChanged` template  
+
+In `Backend/.env`:
 
 ```env
 GMAIL_USER=your-email@gmail.com
@@ -68,8 +73,10 @@ POST   http://localhost:3000/api/auth/register
 POST   http://localhost:3000/api/auth/login
 GET    http://localhost:3000/api/auth/me
 POST   http://localhost:3000/api/auth/forget-password
-POST   http://localhost:3000/api/auth/verify-code
 POST   http://localhost:3000/api/auth/reset-password
+POST   http://localhost:3000/api/auth/change-password/request
+POST   http://localhost:3000/api/auth/verify-code
+POST   http://localhost:3000/api/auth/change-password
 PUT    http://localhost:3000/api/customer/me
 POST   http://localhost:3000/api/address/create
 GET    http://localhost:3000/api/address/get
@@ -77,7 +84,7 @@ PUT    http://localhost:3000/api/address/update/:address_id
 DELETE http://localhost:3000/api/address/delete/:address_id
 ```
 
-Protected routes need header: `x-session-id: <session_id from login/register>` (`verify-code`, `me`, customer, address).
+Protected with `x-session-id`: change-password flow, verify-code, me, customer, address.
 
 API endpoints are tested with **Postman**. Full request/response shapes: [api.md](api.md).
 
@@ -117,7 +124,7 @@ YourSpeace/
         ├── services/
         ├── rep/               # Repository (SQL)
         ├── middleware/        # sessionAuth, authorize
-        └── utils/             # mailer (Nodemailer / Gmail)
+        └── utils/             # mailer + emailTemplates (HTML)
 ```
 
 ### Backend request flow
@@ -128,6 +135,6 @@ Route → Middleware (optional) → Controller → Service → Repository (rep) 
 
 Examples:
 - `/api/health` → `health.controller` → `health.service`
-- `/api/auth/*` → `auth.controller` → `auth.service` → `auth.repository` (+ `mailer` on forget-password; `sessionAuth` on verify-code / me)
+- `/api/auth/*` → `auth.controller` → `auth.service` → `auth.repository` (+ `mailer` / `emailTemplates` on password emails; `sessionAuth` on change-password / verify-code / me)
 - `/api/customer/*` → `sessionAuth` → `customer.controller` → `customer.service` → `customer.repository`
 - `/api/address/*` → `sessionAuth` + `authorize('CUSTOMER')` → `address.controller` → `address.service` → `address.repository`

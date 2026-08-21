@@ -33,10 +33,12 @@ Flow uses DB sessions (`sessions` table) and password reset codes (`password_res
 Register / Login  →  returns user + session
 Logout            →  x-session-id header → find user → delete that session
 Me                →  x-session-id header (+ sessionAuth) → return current user
-Forget password   →  email in body → create code_verifier → send by Gmail (not in JSON)
-Verify code       →  x-session-id + code_verifier (change-password step; does not consume code)
-Reset password    →  email + code_verifier (from inbox) + new_password
-                    (transaction: update password, delete sessions, mark code used)
+Forget password   →  email in body → create code_verifier → HTML email (Gmail)
+Reset password    →  email + code_verifier + new_password (no session required)
+Change password   →  (any logged-in role)
+  1) POST /change-password/request → email code to session user
+  2) POST /verify-code → check code (does not consume)
+  3) POST /change-password → code + new_password → update + invalidate sessions
 ```
 
 ### `POST /api/auth/register`
@@ -123,7 +125,7 @@ Requires `GMAIL_USER` and `GMAIL_APP_PASSWORD` in `Backend/.env` (see [Setup.md]
 **Response `200`**
 ```json
 {
-  "message": "code_verifier and expires_at sent to email successfully"
+  "message": "Reset code sent to email successfully"
 }
 ```
 
@@ -181,7 +183,7 @@ After a successful reset, the old `session_id` no longer works (sessions were de
 
 ### `POST /api/auth/verify-code`
 
-**Change-password step** (logged-in user). Confirms the emailed `code_verifier` for the session user’s email. Does **not** consume the code — the next change-password / reset step still uses it.
+**Change-password step 2** (any logged-in role). Confirms the emailed `code_verifier` for the **session user’s email**. Does **not** consume the code.
 
 **Headers**
 | Key | Value |
@@ -208,6 +210,79 @@ After a successful reset, the old `session_id` no longer works (sessions were de
 | Status | When |
 |--------|------|
 | `400` | Missing / invalid / used / expired code |
+| `401` | Missing/invalid session |
+
+---
+
+### `POST /api/auth/change-password/request`
+
+**Change-password step 1** (any logged-in role: CUSTOMER / SELLER / ADMIN). Creates a code and emails it to **`req.user.email` only** (not from body). Uses HTML template `changePassword` in `src/utils/emailTemplates.js`.
+
+**Headers**
+| Key | Value |
+|-----|--------|
+| `x-session-id` | session from login |
+
+No body required.
+
+**Response `200`**
+```json
+{
+  "message": "Change password code sent to your email successfully"
+}
+```
+
+**Errors**
+| Status | When |
+|--------|------|
+| `401` | Missing/invalid session |
+| `500` | Mail send failed |
+
+---
+
+### `POST /api/auth/change-password`
+
+**Change-password step 3** (any logged-in role). Same secure DB transaction as reset-password (hash password, mark code used, delete **all** sessions). Email is always taken from the session — never from the client body.
+
+**Headers**
+| Key | Value |
+|-----|--------|
+| `x-session-id` | session from login |
+| `Content-Type` | `application/json` |
+
+**Body**
+```json
+{
+  "code_verifier": "uuid-from-email",
+  "new_password": "newSecret123",
+  "confirm_password": "newSecret123"
+}
+```
+
+`confirm_password` is optional; if sent, it must match `new_password`.  
+`new_password` must be at least **8** characters.
+
+**Response `200`**
+```json
+{
+  "message": "Password changed successfully. Please log in again.",
+  "user": {
+    "user_id": "1",
+    "email": "user@example.com",
+    "first_name": "Moustafa",
+    "last_name": "Khatab",
+    "phone_number": "01000000000",
+    "role": "CUSTOMER"
+  }
+}
+```
+
+After success, the current `session_id` is invalid — user must **login** again. A confirmation email (`passwordChanged` template) is sent when mail works.
+
+**Errors**
+| Status | When |
+|--------|------|
+| `400` | Missing fields / mismatch / weak password / bad or used / expired code |
 | `401` | Missing/invalid session |
 
 ---
@@ -475,7 +550,6 @@ Do **not** send `email` in the body.
 ## Not implemented yet
 
 - Changing account email (verification flow)
-- Final change-password submit after verify-code (apply new password while logged in)
 
 ---
 
@@ -485,8 +559,8 @@ Do **not** send `email` in the body.
 Route → Middleware (sessionAuth / authorize) → Controller → Service → Repository → PostgreSQL
 ```
 
-Mail helper (forget-password emails): `src/utils/mailer.js` (`sendMail` via Nodemailer + Gmail).  
-Change-password check: `POST /api/auth/verify-code` with `sessionAuth` (code not consumed).
+Email: `src/utils/mailer.js` + templates in `src/utils/emailTemplates.js`  
+(`changePassword`, `forgetPassword`, `passwordChanged`).
 
 | Feature | Routes | Controllers | Services | Repository |
 |---------|--------|-------------|----------|------------|

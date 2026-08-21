@@ -110,6 +110,12 @@ const createCodeVerifier = async (email) => {
 };
 
 const resetPassword = async (email, code_verifier, newPassword) => {
+    if (!newPassword || String(newPassword).length < 8) {
+        const error = new Error('new_password must be at least 8 characters');
+        error.statusCode = 400;
+        throw error;
+    }
+
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     const user = await authRepository.resetPasswordWithCode(email, code_verifier, hashedPassword);
     if (!user) {
@@ -119,6 +125,11 @@ const resetPassword = async (email, code_verifier, newPassword) => {
     }
 
     return { user };
+};
+
+/** Logged-in change password — same secure transaction as reset; email must match session user. */
+const changePassword = async (email, code_verifier, newPassword) => {
+    return resetPassword(email, code_verifier, newPassword);
 };
 
 const verifyCode = async (email, code_verifier) => {
@@ -151,6 +162,7 @@ module.exports = {
     checkUserRole,
     createCodeVerifier,
     resetPassword,
+    changePassword,
     logout,
     verifyCode,
 };

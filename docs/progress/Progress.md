@@ -7,7 +7,7 @@
 
 ## Current focus
 
-**Sprint 2 – Users** — SCRUM-21 change-password pieces (Gmail code + `verify-code`) are Done. Still To Do:
+**Sprint 2 – Users** — SCRUM-21 full change-password flow is Done. Still To Do:
 
 | Ticket | Item | Status |
 |--------|------|--------|
@@ -22,7 +22,7 @@
 
 ## Latest completed
 
-- **SCRUM-21 Change password** — Gmail emails `code_verifier`; logged-in `POST /api/auth/verify-code` checks the code (does not consume it); forget/reset still available for locked-out users
+- **SCRUM-21 Change password (complete)** — request → HTML email → verify-code → change-password; any logged-in role; email from session only; HTML templates in `emailTemplates.js`
 - Sprint 2: customer profile retrieval/update, address CRUD, logout
 - Sprint 1: sessionful auth, session/role middleware
 - Sprint 0: foundation, domain/ERD, backend scaffold, PostgreSQL
@@ -67,7 +67,7 @@
 | Address update (SCRUM-20) | Done | `PUT /api/address/update/:address_id` |
 | Customer logout (SCRUM-22) | Done | `POST /api/auth/logout` |
 | Address create / get / delete | Done | address.*, [api.md](../setup/api.md) |
-| Change password (SCRUM-21) | Done | Nodemailer/Gmail; `POST /auth/verify-code` (session); forget/reset APIs |
+| Change password (SCRUM-21) | Done | request + verify-code + change-password; `emailTemplates.js`; any role with session |
 | Validation and authorization (SCRUM-23) | To Do | — |
 | API testing (SCRUM-24) | To Do | — |
 
