@@ -39,9 +39,14 @@ DB_PORT=5432
 DB_NAME=yourspeace
 DB_USER=postgres
 DB_PASSWORD=postgres
+
+# Gmail App Password — forget-password emails (see Setup.md)
+GMAIL_USER=your-email@gmail.com
+GMAIL_APP_PASSWORD=your-16-char-app-password
 ```
 
-`connection.js` reads these values into a `pg` Pool.
+`connection.js` reads the `DB_*` values into a `pg` Pool.  
+`src/utils/mailer.js` reads `GMAIL_USER` / `GMAIL_APP_PASSWORD` for Nodemailer.
 
 ---
 

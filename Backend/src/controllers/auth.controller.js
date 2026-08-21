@@ -1,4 +1,6 @@
 const authService = require('../services/auth.service');
+const mailer = require('../utils/mailer');
+
 
 const isValidEmail = (email) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -81,7 +83,14 @@ const forgetPassword = async (req, res) => {
         }
 
         const { code_verifier, expires_at } = await authService.createCodeVerifier(email);
-        return res.status(200).json({ code_verifier, expires_at });
+        await mailer.sendMail({
+            to: email,
+            subject: 'Reset Password',
+            text: `Your reset password code is ${code_verifier} and it will expire in ${ new Date(expires_at).toLocaleString()} minutes`,
+            html: `<p>Your reset password code is ${code_verifier} and it will expire in ${ new Date(expires_at).toLocaleString()} minutes </p>`,
+        });
+        console.log('Email sent successfully');
+        return res.status(200).json({ message: 'code_verifier and expires_at sent to email successfully' });
     } catch (error) {
         if (error.statusCode === 400 || error.statusCode === 404) {
             return res.status(error.statusCode).json({ message: error.message });

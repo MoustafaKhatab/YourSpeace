@@ -7,11 +7,10 @@
 
 ## Current focus
 
-**Sprint 2 – Users (wrapping up)** — profile + address work is Done on the board. Still To Do:
+**Sprint 2 – Users** — change password via Gmail reset is Done. Still To Do:
 
 | Ticket | Item | Status |
 |--------|------|--------|
-| SCRUM-21 | Implement Change Password | To Do |
 | SCRUM-23 | Validation and authorization for these operations | To Do |
 | SCRUM-24 | API testing | To Do |
 
@@ -23,8 +22,9 @@
 
 ## Latest completed
 
-- Sprint 2 (Done on board): customer profile retrieval/update, address update, logout
-- Sprint 1: sessionful auth, password reset, session/role middleware
+- **SCRUM-21 Change password** — forget-password emails `code_verifier` via Gmail (Nodemailer); reset-password still applies the new password
+- Sprint 2: customer profile retrieval/update, address CRUD, logout
+- Sprint 1: sessionful auth, session/role middleware
 - Sprint 0: foundation, domain/ERD, backend scaffold, PostgreSQL
 
 ---
@@ -52,7 +52,7 @@
 | Schema: `users`, `sessions`, `password_reset_codes`, `user_role` | Done | `schema.sql`, [db.md](../setup/db.md) |
 | Register / login (sessionful) | Done | auth routes/services/rep |
 | Logout + `GET /auth/me` | Done | `x-session-id` header |
-| Forget / reset password | Done | `code_verifier` (Gmail later) |
+| Forget / reset password (API + DB) | Done | `password_reset_codes` |
 | Middleware: `sessionAuth`, `authorize` | Done | `session_auth.js`, `authorize.js` |
 | Auth API docs | Done | [api.md](../setup/api.md) |
 
@@ -67,7 +67,7 @@
 | Address update (SCRUM-20) | Done | `PUT /api/address/update/:address_id` |
 | Customer logout (SCRUM-22) | Done | `POST /api/auth/logout` |
 | Address create / get / delete | Done | address.*, [api.md](../setup/api.md) |
-| Change password (SCRUM-21) | To Do | — |
+| Change password (SCRUM-21) | Done | Gmail + Nodemailer on forget-password; reset with emailed code |
 | Validation and authorization (SCRUM-23) | To Do | — |
 | API testing (SCRUM-24) | To Do | — |
 

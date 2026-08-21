@@ -33,8 +33,8 @@ Flow uses DB sessions (`sessions` table) and password reset codes (`password_res
 Register / Login  →  returns user + session
 Logout            →  x-session-id header → find user → delete that session
 Me                →  x-session-id header (+ sessionAuth) → return current user
-Forget password   →  email in body → create code_verifier (dev stand-in for email)
-Reset password    →  email + code_verifier + new_password
+Forget password   →  email in body → create code_verifier → send by Gmail (not in JSON)
+Reset password    →  email + code_verifier (from inbox) + new_password
                     (transaction: update password, delete sessions, mark code used)
 ```
 
@@ -108,7 +108,9 @@ Creates a user (role `CUSTOMER`), hashes password with bcrypt, creates a session
 
 ### `POST /api/auth/forget-password`
 
-Dev flow (until email/Gmail is integrated): send the user email. Server creates a `code_verifier`, stores it in `password_reset_codes`, and returns the code in the response (later this will be emailed instead).
+Creates a `code_verifier`, stores it in `password_reset_codes`, and **emails** it to the user via Gmail (Nodemailer). The code is **not** returned in the JSON body.
+
+Requires `GMAIL_USER` and `GMAIL_APP_PASSWORD` in `Backend/.env` (see [Setup.md](Setup.md)).
 
 **Body**
 ```json
@@ -120,16 +122,18 @@ Dev flow (until email/Gmail is integrated): send the user email. Server creates 
 **Response `200`**
 ```json
 {
-  "code_verifier": "uuid-code",
-  "expires_at": "..."
+  "message": "code_verifier and expires_at sent to email successfully"
 }
 ```
+
+Then open the inbox for that email, copy the `code_verifier`, and call **reset-password**.
 
 **Errors**
 | Status | When |
 |--------|------|
 | `400` | Missing email |
 | `404` | User not found |
+| `500` | Mail send failed (check Gmail env / App Password) |
 
 ---
 
@@ -436,8 +440,8 @@ Do **not** send `email` in the body.
 
 ## Not implemented yet
 
-- Sending reset codes by email (Gmail)
 - Changing account email (verification flow)
+- Logged-in “change password” with old password (current flow is forget → email code → reset)
 
 ---
 
@@ -446,6 +450,8 @@ Do **not** send `email` in the body.
 ```text
 Route → Middleware (sessionAuth / authorize) → Controller → Service → Repository → PostgreSQL
 ```
+
+Mail helper (used by forget-password): `src/utils/mailer.js` (`sendMail` via Nodemailer + Gmail).
 
 | Feature | Routes | Controllers | Services | Repository |
 |---------|--------|-------------|----------|------------|

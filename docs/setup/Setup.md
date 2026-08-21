@@ -14,8 +14,9 @@ Brief guide for running the project so far.
 | Database | PostgreSQL (`pg`) |
 | Password hashing | bcrypt |
 | IDs / tokens | uuid |
+| Email | Nodemailer + Gmail (App Password) |
 | API testing | Postman |
-| Planned later | Prisma, Docker, Redis, RabbitMQ, Gmail for reset codes |
+| Planned later | Prisma, Docker, Redis, RabbitMQ |
 
 ---
 
@@ -32,7 +33,7 @@ Brief guide for running the project so far.
 ```bash
 cd Backend
 npm install
-cp .env.example .env   # then edit DB_PASSWORD if needed
+cp .env.example .env   # edit DB_* and GMAIL_* 
 npm run db             # apply schema (users, addresses, sessions, password_reset_codes)
 npm run dev
 ```
@@ -42,6 +43,17 @@ npm run dev
 | `npm run dev` | Start server with Nodemon (auto-reload) |
 | `npm start` | Start server with Node |
 | `npm run db` | Apply `Database/schema.sql` to PostgreSQL |
+
+### Gmail (password reset emails)
+
+Forget-password sends the reset code by email. In `Backend/.env`:
+
+```env
+GMAIL_USER=your-email@gmail.com
+GMAIL_APP_PASSWORD=your-16-char-app-password
+```
+
+Use a Google [App Password](https://myaccount.google.com/apppasswords) (2FA on), not your normal Gmail password. Helper: `src/utils/mailer.js`.
 
 - Database guide: **[db.md](db.md)**
 - API reference: **[api.md](api.md)**
@@ -101,7 +113,8 @@ YourSpeace/
         ├── controllers/
         ├── services/
         ├── rep/               # Repository (SQL)
-        └── middleware/        # sessionAuth, authorize
+        ├── middleware/        # sessionAuth, authorize
+        └── utils/             # mailer (Nodemailer / Gmail)
 ```
 
 ### Backend request flow
@@ -112,6 +125,6 @@ Route → Middleware (optional) → Controller → Service → Repository (rep) 
 
 Examples:
 - `/api/health` → `health.controller` → `health.service`
-- `/api/auth/*` → `auth.controller` → `auth.service` → `auth.repository`
+- `/api/auth/*` → `auth.controller` → `auth.service` → `auth.repository` (+ `mailer` on forget-password)
 - `/api/customer/*` → `sessionAuth` → `customer.controller` → `customer.service` → `customer.repository`
 - `/api/address/*` → `sessionAuth` + `authorize('CUSTOMER')` → `address.controller` → `address.service` → `address.repository`

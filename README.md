@@ -45,6 +45,7 @@ This project follows an **Agile Scrum** workflow. Process details and the epic l
 - PostgreSQL (`pg`)
 - bcrypt
 - uuid
+- Nodemailer + Gmail (password-reset emails)
 - Postman (API testing)
 
 **Planned**
@@ -53,7 +54,6 @@ This project follows an **Agile Scrum** workflow. Process details and the epic l
 - Docker
 - Redis
 - RabbitMQ
-- Gmail / email for password-reset codes
 
 ---
 
