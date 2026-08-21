@@ -239,7 +239,8 @@ Backend/
     ├── schema.sql          # Types + CREATE TABLE only
     ├── apply_schema.js     # Used by npm run db
     ├── set_password.sql    # One-time: set postgres password
-    └── migrate_role_enum.sql # One-time: VARCHAR role → user_role enum
+    ├── migrate_role_enum.sql # One-time: VARCHAR role → user_role enum
+    └── migrate_password_code_verified.sql # One-time: add verified column
 ```
 
 API usage: [api.md](api.md)

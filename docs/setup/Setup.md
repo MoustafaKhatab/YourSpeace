@@ -76,7 +76,7 @@ POST   http://localhost:3000/api/auth/forget-password
 POST   http://localhost:3000/api/auth/reset-password
 POST   http://localhost:3000/api/auth/change-password/request
 POST   http://localhost:3000/api/auth/verify-code
-POST   http://localhost:3000/api/auth/change-password
+PUT    http://localhost:3000/api/auth/change-password
 PUT    http://localhost:3000/api/customer/me
 POST   http://localhost:3000/api/address/create
 GET    http://localhost:3000/api/address/get
