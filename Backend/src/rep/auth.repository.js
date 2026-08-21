@@ -157,6 +157,35 @@ const resetPasswordWithCode = async (email, code_verifier, hashedPassword) => {
     }
 };
 
+/** Read-only check for change-password flow — does not delete or mark used. */
+const VerifierByEmailAndCodeVerifier = async (email, code_verifier) => {
+    const query = `
+        SELECT id, email, code_verifier, used, expires_at, created_at
+        FROM password_reset_codes
+        WHERE email = $1 AND code_verifier = $2
+    `;
+    const result = await pool.query(query, [email, code_verifier]);
+    const codeRow = result.rows[0];
+
+    if (!codeRow) {
+        const error = new Error('Invalid email or code');
+        error.statusCode = 400;
+        throw error;
+    }
+    if (codeRow.used) {
+        const error = new Error('Code already used');
+        error.statusCode = 400;
+        throw error;
+    }
+    if (new Date(codeRow.expires_at) <= new Date()) {
+        const error = new Error('Code expired');
+        error.statusCode = 400;
+        throw error;
+    }
+
+    return codeRow;
+};
+
 const deleteSessionBySessionId = async (session_id) => {
     const query = `
         DELETE FROM sessions
@@ -177,4 +206,5 @@ module.exports = {
     createCodeVerifier,
     resetPasswordWithCode,
     deleteSessionBySessionId,
+    VerifierByEmailAndCodeVerifier,
 };

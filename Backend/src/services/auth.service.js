@@ -121,6 +121,14 @@ const resetPassword = async (email, code_verifier, newPassword) => {
     return { user };
 };
 
+const verifyCode = async (email, code_verifier) => {
+    const code = await authRepository.VerifierByEmailAndCodeVerifier(email, code_verifier);
+    return {
+        message: 'Code verified successfully',
+        expires_at: code.expires_at,
+    };
+};
+
 const logout = async (session_id) => {
     const user = await authRepository.getUserBySessionId(session_id);
     if (!user) {
@@ -144,4 +152,5 @@ module.exports = {
     createCodeVerifier,
     resetPassword,
     logout,
+    verifyCode,
 };

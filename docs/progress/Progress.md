@@ -67,7 +67,7 @@
 | Address update (SCRUM-20) | Done | `PUT /api/address/update/:address_id` |
 | Customer logout (SCRUM-22) | Done | `POST /api/auth/logout` |
 | Address create / get / delete | Done | address.*, [api.md](../setup/api.md) |
-| Change password (SCRUM-21) | Done | Gmail + Nodemailer on forget-password; reset with emailed code |
+| Change password (SCRUM-21) | Done | Gmail on forget-password; `POST /auth/verify-code` (session) for change-password step |
 | Validation and authorization (SCRUM-23) | To Do | — |
 | API testing (SCRUM-24) | To Do | — |
 

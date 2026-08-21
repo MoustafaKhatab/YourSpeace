@@ -83,12 +83,14 @@ const forgetPassword = async (req, res) => {
         }
 
         const { code_verifier, expires_at } = await authService.createCodeVerifier(email);
+       
         await mailer.sendMail({
             to: email,
             subject: 'Reset Password',
             text: `Your reset password code is ${code_verifier} and it will expire in ${ new Date(expires_at).toLocaleString()} minutes`,
             html: `<p>Your reset password code is ${code_verifier} and it will expire in ${ new Date(expires_at).toLocaleString()} minutes </p>`,
         });
+
         console.log('Email sent successfully');
         return res.status(200).json({ message: 'code_verifier and expires_at sent to email successfully' });
     } catch (error) {
@@ -175,6 +177,32 @@ const me = async (req, res) => {
     }
 };
 
+
+// Change-password step: logged-in user confirms emailed code (code stays valid for the next step)
+const verifyCode = async (req, res) => {
+    try {
+        const { code_verifier } = req.body;
+        const user = req.user;
+
+        if (!user) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
+        if (!code_verifier) {
+            return res.status(400).json({ message: 'Code verifier is required' });
+        }
+
+        const result = await authService.verifyCode(user.email, code_verifier);
+        return res.status(200).json(result);
+    } catch (error) {
+        if (error.statusCode === 400 || error.statusCode === 404) {
+            return res.status(error.statusCode).json({ message: error.message });
+        }
+
+        console.error('Verify code error:', error.message);
+        return res.status(500).json({ message: 'Failed to verify code' });
+    }
+};
+
 module.exports = {
     register,
     login,
@@ -182,4 +210,5 @@ module.exports = {
     resetPassword,
     logout,
     me,
+    verifyCode,
 };

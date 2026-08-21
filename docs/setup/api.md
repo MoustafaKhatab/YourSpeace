@@ -178,6 +178,39 @@ After a successful reset, the old `session_id` no longer works (sessions were de
 
 ---
 
+### `POST /api/auth/verify-code`
+
+**Change-password step** (logged-in user). Confirms the emailed `code_verifier` for the session user’s email. Does **not** consume the code — the next change-password / reset step still uses it.
+
+**Headers**
+| Key | Value |
+|-----|--------|
+| `x-session-id` | session from login |
+| `Content-Type` | `application/json` |
+
+**Body**
+```json
+{
+  "code_verifier": "uuid-from-email"
+}
+```
+
+**Response `200`**
+```json
+{
+  "message": "Code verified successfully",
+  "expires_at": "..."
+}
+```
+
+**Errors**
+| Status | When |
+|--------|------|
+| `400` | Missing / invalid / used / expired code |
+| `401` | Missing/invalid session |
+
+---
+
 ### `POST /api/auth/logout`
 
 Takes `x-session-id` header, finds the user via JOIN (`sessions` + `users`), then deletes that session row.
@@ -441,7 +474,7 @@ Do **not** send `email` in the body.
 ## Not implemented yet
 
 - Changing account email (verification flow)
-- Logged-in “change password” with old password (current flow is forget → email code → reset)
+- Final change-password submit after verify-code (apply new password while logged in)
 
 ---
 
