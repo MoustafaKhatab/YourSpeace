@@ -136,6 +136,7 @@ const verifyCode = async (email, code_verifier) => {
     const code = await authRepository.VerifierByEmailAndCodeVerifier(email, code_verifier);
     return {
         message: 'Code verified successfully',
+        verified: code.verified,
         expires_at: code.expires_at,
     };
 };

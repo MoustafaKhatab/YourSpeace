@@ -192,20 +192,31 @@ const me = async (req, res) => {
 };
 
 
-// Change-password step: logged-in user confirms emailed code (code stays valid for the next step)
+// Marks code as verified (required before change-password / reset-password).
+// Logged-in: email from session. Not logged-in (forget flow): email from body.
 const verifyCode = async (req, res) => {
     try {
-        const { code_verifier } = req.body;
-        const user = req.user;
+        const { code_verifier, email: bodyEmail } = req.body || {};
+        let email;
 
-        if (!user) {
-            return res.status(401).json({ message: 'Unauthorized' });
+        if (req.user) {
+            email = req.user.email;
+        } else if (bodyEmail) {
+            if (!isValidEmail(bodyEmail)) {
+                return res.status(400).json({ message: 'Invalid email' });
+            }
+            email = bodyEmail;
+        } else {
+            return res.status(400).json({
+                message: 'Email is required when not logged in (or send x-session-id)',
+            });
         }
+
         if (!code_verifier) {
             return res.status(400).json({ message: 'Code verifier is required' });
         }
 
-        const result = await authService.verifyCode(user.email, code_verifier);
+        const result = await authService.verifyCode(email, code_verifier);
         return res.status(200).json(result);
     } catch (error) {
         if (error.statusCode === 400 || error.statusCode === 404) {

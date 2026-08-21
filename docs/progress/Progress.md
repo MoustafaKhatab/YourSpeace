@@ -22,7 +22,7 @@
 
 ## Latest completed
 
-- **SCRUM-21 Change password (complete)** — request → HTML email → verify-code → change-password; any logged-in role; email from session only; HTML templates in `emailTemplates.js`
+- **SCRUM-21 Change password (complete)** — request → verify-code (sets `verified`) → change-password; reset also requires verify-code; HTML templates in `emailTemplates.js`
 - Sprint 2: customer profile retrieval/update, address CRUD, logout
 - Sprint 1: sessionful auth, session/role middleware
 - Sprint 0: foundation, domain/ERD, backend scaffold, PostgreSQL
@@ -67,7 +67,7 @@
 | Address update (SCRUM-20) | Done | `PUT /api/address/update/:address_id` |
 | Customer logout (SCRUM-22) | Done | `POST /api/auth/logout` |
 | Address create / get / delete | Done | address.*, [api.md](../setup/api.md) |
-| Change password (SCRUM-21) | Done | request + verify-code + change-password; `emailTemplates.js`; any role with session |
+| Change password (SCRUM-21) | Done | request + verify-code (`verified` flag) + PUT change-password; `emailTemplates.js` |
 | Validation and authorization (SCRUM-23) | To Do | — |
 | API testing (SCRUM-24) | To Do | — |
 

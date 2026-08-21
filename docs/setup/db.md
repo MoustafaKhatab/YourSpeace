@@ -119,7 +119,7 @@ PGPASSWORD=postgres psql -h localhost -U postgres -d yourspeace -f Backend/Datab
 | `users` | Accounts (email, hashed_password, names, role, …) |
 | `addresses` | User shipping/profile addresses (1 user → many addresses) |
 | `sessions` | Sessionful auth tokens (`session_id`, `expires_at`) |
-| `password_reset_codes` | Email codes for forget-password and change-password verify (`code_verifier`, `used`, `expires_at`) |
+| `password_reset_codes` | Email codes (`code_verifier`, `verified`, `used`, `expires_at`) — must call verify-code before reset/change |
 
 ### `users`
 - `user_id` PK  
@@ -146,10 +146,11 @@ PGPASSWORD=postgres psql -h localhost -U postgres -d yourspeace -f Backend/Datab
 - `email`  
 - `code_verifier` unique  
 - `used` (boolean)  
+- `verified` (boolean) — set only by `POST /auth/verify-code`  
 - `expires_at`, `created_at`
 
-Password reset uses a **transaction**: update password + delete user sessions + mark code `used`.  
-Address delete requires both `address_id` and owning `user_id` (ownership check).
+Password reset / change uses a **transaction**: update password + delete user sessions + mark code `used`.  
+Expiry checks run only in **verify-code**; apply-password steps require `verified = true`.
 
 ---
 

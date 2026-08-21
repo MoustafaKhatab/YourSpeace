@@ -40,6 +40,7 @@ CREATE TABLE IF NOT EXISTS password_reset_codes (
     email VARCHAR(255) NOT NULL,
     code_verifier VARCHAR(255) NOT NULL UNIQUE,
     used BOOLEAN NOT NULL DEFAULT FALSE,
+    verified BOOLEAN NOT NULL DEFAULT FALSE,
     expires_at TIMESTAMPTZ NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

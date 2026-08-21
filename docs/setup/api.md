@@ -34,11 +34,12 @@ Register / Login  →  returns user + session
 Logout            →  x-session-id header → find user → delete that session
 Me                →  x-session-id header (+ sessionAuth) → return current user
 Forget password   →  email in body → create code_verifier → HTML email (Gmail)
-Reset password    →  email + code_verifier + new_password (no session required)
+Verify code       →  REQUIRED before reset/change (sets verified=true; checks expiry here only)
+Reset password    →  email + code_verifier + new_password (code must be verified)
 Change password   →  (any logged-in role)
   1) POST /change-password/request → email code to session user
-  2) POST /verify-code → check code (does not consume)
-  3) POST /change-password → code + new_password → update + invalidate sessions
+  2) POST /verify-code → marks code verified
+  3) PUT  /change-password → requires verified code → update + invalidate sessions
 ```
 
 ### `POST /api/auth/register`
@@ -142,7 +143,10 @@ Then open the inbox for that email, copy the `code_verifier`, and call **reset-p
 
 ### `POST /api/auth/reset-password`
 
-Verifies `email` + `code_verifier`, then in a **DB transaction**:
+**Requires a prior successful `POST /auth/verify-code`.**  
+Applies the new password only if the code has `verified = true`. Expiry is **not** re-checked here (that happens only in verify-code).
+
+Verifies `email` + `code_verifier` (+ verified flag), then in a **DB transaction**:
 1. Update password  
 2. Delete all sessions for that user  
 3. Mark the reset code as `used = true`
@@ -174,7 +178,7 @@ Verifies `email` + `code_verifier`, then in a **DB transaction**:
 **Errors**
 | Status | When |
 |--------|------|
-| `400` | Missing fields / invalid or used / expired code |
+| `400` | Missing fields / invalid code / not verified / already used |
 | `404` | User not found |
 
 After a successful reset, the old `session_id` no longer works (sessions were deleted). User must **login** again.
@@ -183,17 +187,29 @@ After a successful reset, the old `session_id` no longer works (sessions were de
 
 ### `POST /api/auth/verify-code`
 
-**Change-password step 2** (any logged-in role). Confirms the emailed `code_verifier` for the **session user’s email**. Does **not** consume the code.
+**Required step** before `reset-password` or `change-password`.  
+This is the **only** place that validates expiry / unused. On success it sets `verified = true` on the code (does not mark `used`).
 
-**Headers**
+**Logged-in (change-password):** send `x-session-id` — email comes from the session.  
+**Not logged-in (forget-password):** send `email` in the body.
+
+**Headers (optional session)**
 | Key | Value |
 |-----|--------|
-| `x-session-id` | session from login |
+| `x-session-id` | session from login (optional) |
 | `Content-Type` | `application/json` |
 
-**Body**
+**Body (logged-in)**
 ```json
 {
+  "code_verifier": "uuid-from-email"
+}
+```
+
+**Body (forget flow)**
+```json
+{
+  "email": "user@example.com",
   "code_verifier": "uuid-from-email"
 }
 ```
@@ -202,6 +218,7 @@ After a successful reset, the old `session_id` no longer works (sessions were de
 ```json
 {
   "message": "Code verified successfully",
+  "verified": true,
   "expires_at": "..."
 }
 ```
@@ -209,8 +226,8 @@ After a successful reset, the old `session_id` no longer works (sessions were de
 **Errors**
 | Status | When |
 |--------|------|
-| `400` | Missing / invalid / used / expired code |
-| `401` | Missing/invalid session |
+| `400` | Missing fields / invalid / used / expired code |
+| `401` | Invalid session (only if `x-session-id` was sent) |
 
 ---
 
@@ -240,9 +257,10 @@ No body required.
 
 ---
 
-### `POST /api/auth/change-password`
+### `PUT /api/auth/change-password`
 
-**Change-password step 3** (any logged-in role). Same secure DB transaction as reset-password (hash password, mark code used, delete **all** sessions). Email is always taken from the session — never from the client body.
+**Change-password step 3** (any logged-in role). **Requires prior `verify-code`.**  
+Same DB transaction as reset-password. Email is always from the session — never from the body.
 
 **Headers**
 | Key | Value |
@@ -282,7 +300,7 @@ After success, the current `session_id` is invalid — user must **login** again
 **Errors**
 | Status | When |
 |--------|------|
-| `400` | Missing fields / mismatch / weak password / bad or used / expired code |
+| `400` | Missing fields / mismatch / weak password / code not verified / already used |
 | `401` | Missing/invalid session |
 
 ---
