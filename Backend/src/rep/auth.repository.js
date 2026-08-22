@@ -1,6 +1,7 @@
 const pool = require('../../Database/connection');
 
-const createUser = async (email, hashedPassword, first_name, last_name, phone_number, role = 'CUSTOMER') => {
+const createCustomer = async (email, hashedPassword, first_name, last_name, phone_number, role) => {
+    
     const query = `
         INSERT INTO users (email, hashed_password, first_name, last_name, phone_number, role)
         VALUES ($1, $2, $3, $4, $5, $6)
@@ -9,6 +10,46 @@ const createUser = async (email, hashedPassword, first_name, last_name, phone_nu
     const values = [email, hashedPassword, first_name, last_name, phone_number, role];
     const result = await pool.query(query, values);
     return result.rows[0];
+};
+
+const createSeller = async (email, hashedPassword, first_name, last_name, phone_number, role) => {
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        const result = await client.query(
+            `
+            INSERT INTO users (email, hashed_password, first_name, last_name, phone_number, role)
+            VALUES ($1, $2, $3, $4, $5, $6)
+            RETURNING user_id, email, first_name, last_name, phone_number, role
+            `, [email, hashedPassword, first_name, last_name, phone_number, role]
+        );
+        const user = result.rows[0];
+        if(!user) {
+            const error = new Error('User not created');
+            error.statusCode = 400;
+            throw error;
+        }
+        const sellerResult = await client.query(
+            `
+            INSERT INTO sellers (user_id)
+            VALUES ($1)
+            RETURNING seller_id
+            `, [user.user_id]
+        );
+        const seller = sellerResult.rows[0];
+        if(!seller) {
+            const error = new Error('Seller not created');
+            error.statusCode = 400;
+            throw error;
+        }
+        await client.query('COMMIT');
+        return { user, seller };
+    } catch (error) {
+        await client.query('ROLLBACK');
+        throw error;
+    } finally {
+        client.release();
+    }
 };
 
 const getUserByEmail = async (email) => {
@@ -22,7 +63,28 @@ const getUserByEmail = async (email) => {
     return result.rows[0];
 };
 
-const getUserById = async (user_id) => {
+const getUserById = async (user_id, role = null) => {
+    if (role === 'SELLER') {
+        const query = `
+            SELECT
+                u.user_id,
+                u.email,
+                u.first_name,
+                u.last_name,
+                u.phone_number,
+                u.role,
+                s.seller_id,
+                s.created_at AS seller_created_at,
+                s.updated_at AS seller_updated_at
+            FROM users u
+            INNER JOIN sellers s ON s.user_id = u.user_id
+            WHERE u.user_id = $1
+              AND u.role = 'SELLER'
+        `;
+        const result = await pool.query(query, [user_id]);
+        return result.rows[0];
+    }
+
     const query = `
         SELECT user_id, email, first_name, last_name, phone_number, role
         FROM users
@@ -228,7 +290,8 @@ const deleteSessionBySessionId = async (session_id) => {
 };
 
 module.exports = {
-    createUser,
+    createSeller,
+    createCustomer,
     getUserByEmail,
     getUserById,
     getUserBySessionId,

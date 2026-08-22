@@ -10,7 +10,7 @@ const MIN_PASSWORD_LENGTH = 8;
 
 const register = async (req, res) => {
     try {
-        const { email, password, first_name, last_name, phone_number } = req.body;
+        const { email, password, first_name, last_name, phone_number, role } = req.body;
 
         if (!email || !password || !first_name || !last_name) {
             return res.status(400).json({
@@ -20,21 +20,32 @@ const register = async (req, res) => {
         if (!isValidEmail(email)) {
             return res.status(400).json({ message: 'Invalid email' });
         }
+        if (role !== undefined && role !== null && String(role).trim() !== '') {
+            const allowed = ['CUSTOMER', 'SELLER'];
+            if (!allowed.includes(String(role).toUpperCase())) {
+                return res.status(400).json({ message: 'role must be CUSTOMER or SELLER' });
+            }
+        }
 
-        const { user, session } = await authService.register(
+        const result = await authService.register(
             email,
             password,
             first_name,
             last_name,
-            phone_number || null
+            phone_number || null,
+            role
         );
 
         return res.status(201).json({
             message: 'User created successfully',
-            user,
-            session,
+            user: result.user,
+            session: result.session,
+            ...(result.seller && { seller: result.seller }),
         });
     } catch (error) {
+        if (error.statusCode === 400) {
+            return res.status(400).json({ message: error.message });
+        }
         if (error.code === '23505') {
             return res.status(409).json({ message: 'Email already registered' });
         }

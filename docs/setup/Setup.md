@@ -34,7 +34,7 @@ Brief guide for running the project so far.
 cd Backend
 npm install
 cp .env.example .env   # edit DB_* and GMAIL_* 
-npm run db             # apply schema (users, addresses, sessions, password_reset_codes)
+npm run db             # apply schema (users, addresses, sessions, password_reset_codes, sellers)
 npm run dev
 ```
 
@@ -77,6 +77,7 @@ POST   http://localhost:3000/api/auth/reset-password
 POST   http://localhost:3000/api/auth/change-password/request
 POST   http://localhost:3000/api/auth/verify-code
 PUT    http://localhost:3000/api/auth/change-password
+GET    http://localhost:3000/api/seller/me
 PUT    http://localhost:3000/api/customer/me
 POST   http://localhost:3000/api/address/create
 GET    http://localhost:3000/api/address/get
@@ -119,7 +120,7 @@ YourSpeace/
     └── src/
         ├── app.js
         ├── server.js
-        ├── routes/            # health, auth, address, customer
+        ├── routes/            # health, auth, address, customer, seller
         ├── controllers/
         ├── services/
         ├── rep/               # Repository (SQL)
@@ -137,4 +138,5 @@ Examples:
 - `/api/health` → `health.controller` → `health.service`
 - `/api/auth/*` → `auth.controller` → `auth.service` → `auth.repository` (+ `mailer` / `emailTemplates` on password emails; `sessionAuth` on change-password / verify-code / me)
 - `/api/customer/*` → `sessionAuth` → `customer.controller` → `customer.service` → `customer.repository`
+- `/api/seller/*` → `sessionAuth` + `authorize('SELLER')` → `seller.controller` → `seller.service` → `auth.repository` (user + sellers JOIN)
 - `/api/address/*` → `sessionAuth` + `authorize('CUSTOMER')` → `address.controller` → `address.service` → `address.repository`

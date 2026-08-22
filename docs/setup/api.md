@@ -44,7 +44,10 @@ Change password   →  (any logged-in role)
 
 ### `POST /api/auth/register`
 
-Creates a user (role `CUSTOMER`), hashes password with bcrypt, creates a session.
+Creates a user, hashes password with bcrypt, creates a session.
+
+- **`role` optional** — defaults to `CUSTOMER`. Allowed: `CUSTOMER` | `SELLER` only (`ADMIN` is rejected).
+- **`SELLER`** — also inserts a row in `sellers` (transaction: user + seller profile).
 
 **Body**
 ```json
@@ -53,13 +56,14 @@ Creates a user (role `CUSTOMER`), hashes password with bcrypt, creates a session
   "password": "secret123",
   "first_name": "Moustafa",
   "last_name": "Khatab",
-  "phone_number": "01000000000"
+  "phone_number": "01000000000",
+  "role": "CUSTOMER"
 }
 ```
 
-`phone_number` is optional.
+`phone_number` and `role` are optional.
 
-**Response `201`**
+**Response `201` (customer)**
 ```json
 {
   "message": "User created successfully",
@@ -82,10 +86,19 @@ Creates a user (role `CUSTOMER`), hashes password with bcrypt, creates a session
 }
 ```
 
+**Response `201` (seller)** — same as above, plus:
+```json
+{
+  "seller": {
+    "seller_id": "1"
+  }
+}
+```
+
 **Errors**
 | Status | When |
 |--------|------|
-| `400` | Missing fields / invalid email |
+| `400` | Missing fields / invalid email / invalid role |
 | `409` | Email already registered |
 
 ---
@@ -565,6 +578,47 @@ Do **not** send `email` in the body.
 
 ---
 
+## Seller profile
+
+Requires `x-session-id` + `sessionAuth` + `authorize('SELLER')`.  
+`user_id` comes from the session; SQL joins `users` + `sellers` where `role = 'SELLER'`.
+
+### `GET /api/seller/me`
+
+**Headers**
+| Key | Value |
+|-----|--------|
+| `x-session-id` | session from login/register |
+
+**Response `200`**
+```json
+{
+  "message": "Seller profile fetched successfully",
+  "user": {
+    "user_id": "15",
+    "email": "seller@example.com",
+    "first_name": "Moustafa",
+    "last_name": "Khatab",
+    "phone_number": "01000000000",
+    "role": "SELLER"
+  },
+  "seller": {
+    "seller_id": "1",
+    "created_at": "...",
+    "updated_at": "..."
+  }
+}
+```
+
+**Errors**
+| Status | When |
+|--------|------|
+| `401` | Missing/invalid session |
+| `403` | Not a SELLER |
+| `404` | No seller row for this user |
+
+---
+
 ## Not implemented yet
 
 - Changing account email (verification flow)
@@ -585,4 +639,5 @@ Email: `src/utils/mailer.js` + templates in `src/utils/emailTemplates.js`
 | Auth | `auth.routes.js` | `auth.controller.js` | `auth.service.js` | `auth.repository.js` |
 | Address | `address.routes.js` | `address.controller.js` | `address.service.js` | `address.repository.js` |
 | Customer | `customer.routes.js` | `customer.controller.js` | `customer.service.js` | `customer.repository.js` |
+| Seller | `seller.routes.js` | `seller.controller.js` | `seller.service.js` | `auth.repository.js` (JOIN via `getUserById`) |
 | Health | `health.routes.js` | `health.controller.js` | `health.service.js` | — |

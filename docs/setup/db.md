@@ -120,6 +120,7 @@ PGPASSWORD=postgres psql -h localhost -U postgres -d yourspeace -f Backend/Datab
 | `addresses` | User shipping/profile addresses (1 user → many addresses) |
 | `sessions` | Sessionful auth tokens (`session_id`, `expires_at`) |
 | `password_reset_codes` | Email codes (`code_verifier`, `verified`, `used`, `expires_at`) — must call verify-code before reset/change |
+| `sellers` | Optional seller profile (1 user → 0..1 seller) |
 
 ### `users`
 - `user_id` PK  
@@ -151,6 +152,11 @@ PGPASSWORD=postgres psql -h localhost -U postgres -d yourspeace -f Backend/Datab
 
 Password reset / change uses a **transaction**: update password + delete user sessions + mark code `used`.  
 Expiry checks run only in **verify-code**; apply-password steps require `verified = true`.
+
+### `sellers`
+- `seller_id` PK  
+- `user_id` FK → `users` (ON DELETE CASCADE, **UNIQUE** — one seller profile per user)  
+- `created_at`, `updated_at`
 
 ---
 

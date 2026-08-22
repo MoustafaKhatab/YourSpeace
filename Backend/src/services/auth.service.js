@@ -7,18 +7,56 @@ const toSafeUser = (user) => {
     return safeUser;
 };
 
-const register = async (email, password, first_name, last_name, phone_number) => {
+const ALLOWED_REGISTER_ROLES = ['CUSTOMER', 'SELLER'];
+
+const register = async (email, password, first_name, last_name, phone_number, role) => {
+    const normalizedRole = (role || 'CUSTOMER').toUpperCase();
+
+    if (!ALLOWED_REGISTER_ROLES.includes(normalizedRole)) {
+        const error = new Error('role must be CUSTOMER or SELLER');
+        error.statusCode = 400;
+        throw error;
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
-    const user = await authRepository.createUser(
-        email,
-        hashedPassword,
-        first_name,
-        last_name,
-        phone_number,
-        'CUSTOMER'
-    );
+
+    let user;
+    let seller;
+
+    if (normalizedRole === 'SELLER') {
+        const result = await authRepository.createSeller(
+            email,
+            hashedPassword,
+            first_name,
+            last_name,
+            phone_number,
+            normalizedRole
+        );
+        user = result.user;
+        seller = result.seller;
+    } else {
+        user = await authRepository.createCustomer(
+            email,
+            hashedPassword,
+            first_name,
+            last_name,
+            phone_number,
+            'CUSTOMER'
+        );
+    }
+
+    if (!user) {
+        const error = new Error('User not created');
+        error.statusCode = 400;
+        throw error;
+    }
+
     const session = await createSession(user.user_id);
-    return { user, session };
+    return {
+        user: toSafeUser(user),
+        session,
+        ...(seller && { seller }),
+    };
 };
 
 const login = async (email, password) => {
