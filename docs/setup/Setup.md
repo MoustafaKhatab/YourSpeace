@@ -71,14 +71,14 @@ Server default: `http://localhost:3000`
 GET    http://localhost:3000/api/health
 POST   http://localhost:3000/api/auth/register
 POST   http://localhost:3000/api/auth/login
-GET    http://localhost:3000/api/auth/me
 POST   http://localhost:3000/api/auth/forget-password
 POST   http://localhost:3000/api/auth/reset-password
 POST   http://localhost:3000/api/auth/change-password/request
 POST   http://localhost:3000/api/auth/verify-code
 PUT    http://localhost:3000/api/auth/change-password
-GET    http://localhost:3000/api/seller/me
+GET    http://localhost:3000/api/customer/me
 PUT    http://localhost:3000/api/customer/me
+GET    http://localhost:3000/api/seller/me
 POST   http://localhost:3000/api/address/create
 GET    http://localhost:3000/api/address/get
 PUT    http://localhost:3000/api/address/update/:address_id

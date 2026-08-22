@@ -2,7 +2,6 @@ const express = require('express');
 const authController = require('../controllers/auth.controller');
 const sessionAuth = require('../middleware/session_auth');
 const optionalSessionAuth = require('../middleware/optional_session_auth');
-const authorize = require('../middleware/authorize');
 const router = express.Router();
 
 router.post('/register', authController.register);
@@ -16,6 +15,5 @@ router.post('/verify-code', optionalSessionAuth, authController.verifyCode);
 router.put('/change-password', sessionAuth, authController.changePassword);
 
 router.post('/logout', authController.logout);
-router.get('/me', sessionAuth, authorize('CUSTOMER'), authController.me);
 
 module.exports = router;

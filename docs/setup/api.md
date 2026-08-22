@@ -32,7 +32,6 @@ Flow uses DB sessions (`sessions` table) and password reset codes (`password_res
 ```text
 Register / Login  →  returns user + session
 Logout            →  x-session-id header → find user → delete that session
-Me                →  x-session-id header (+ sessionAuth) → return current user
 Forget password   →  email in body → create code_verifier → HTML email (Gmail)
 Verify code       →  REQUIRED before reset/change (sets verified=true; checks expiry here only)
 Reset password    →  email + code_verifier + new_password (code must be verified)
@@ -344,42 +343,6 @@ No body required.
 
 ---
 
-### `GET /api/auth/me`
-
-Returns the current user for a valid session. Route uses `sessionAuth` + `authorize('CUSTOMER')`.
-
-**Headers**
-| Key | Value |
-|-----|--------|
-| `x-session-id` | uuid from login/register |
-
-```http
-GET http://localhost:3000/api/auth/me
-x-session-id: uuid-from-login-or-register
-```
-
-**Response `200`**
-```json
-{
-  "user": {
-    "user_id": "1",
-    "email": "user@example.com",
-    "first_name": "Moustafa",
-    "last_name": "Khatab",
-    "phone_number": "01000000000",
-    "role": "CUSTOMER"
-  }
-}
-```
-
-**Errors**
-| Status | When |
-|--------|------|
-| `401` | Missing/invalid/expired `x-session-id` |
-| `403` | Role not allowed (requires `CUSTOMER`) |
-
----
-
 ## Address (CUSTOMER)
 
 All address routes require:
@@ -533,7 +496,44 @@ Example: `DELETE http://localhost:3000/api/address/delete/1`
 
 ## Customer profile
 
-Requires `x-session-id` (via `sessionAuth`). Updates **name and phone only** — email changes are deferred to a later Gmail/verification flow.
+Requires `x-session-id` + `sessionAuth` + `authorize('CUSTOMER')`.  
+Updates **name and phone only** — email changes are deferred to a later Gmail/verification flow.
+
+### `GET /api/customer/me`
+
+Returns the current customer for a valid session.
+
+**Headers**
+| Key | Value |
+|-----|--------|
+| `x-session-id` | uuid from login/register |
+
+```http
+GET http://localhost:3000/api/customer/me
+x-session-id: uuid-from-login-or-register
+```
+
+**Response `200`**
+```json
+{
+  "user": {
+    "user_id": "1",
+    "email": "user@example.com",
+    "first_name": "Moustafa",
+    "last_name": "Khatab",
+    "phone_number": "01000000000",
+    "role": "CUSTOMER"
+  }
+}
+```
+
+**Errors**
+| Status | When |
+|--------|------|
+| `401` | Missing/invalid/expired `x-session-id` |
+| `403` | Role not allowed (requires `CUSTOMER`) |
+
+---
 
 ### `PUT /api/customer/me`
 

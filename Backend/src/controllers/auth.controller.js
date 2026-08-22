@@ -176,33 +176,6 @@ const logout = async (req, res) => {
     }
 };
 
-const me = async (req, res) => {
-    try {
-        // Prefer user attached by sessionAuth middleware
-        if (req.user) {
-            return res.status(200).json({ user: req.user });
-        }
-
-        const session_id = req.headers['x-session-id'];
-        if (!session_id) {
-            return res.status(400).json({
-                message: 'Session ID is required',
-            });
-        }
-
-        const { user } = await authService.getUserBySessionId(session_id);
-        return res.status(200).json({ user });
-    } catch (error) {
-        if (error.statusCode === 404) {
-            return res.status(404).json({ message: error.message });
-        }
-
-        console.error('Me error:', error.message);
-        return res.status(500).json({ message: 'Failed to get current user' });
-    }
-};
-
-
 // Marks code as verified (required before change-password / reset-password).
 // Logged-in: email from session. Not logged-in (forget flow): email from body.
 const verifyCode = async (req, res) => {
@@ -339,7 +312,6 @@ module.exports = {
     forgetPassword,
     resetPassword,
     logout,
-    me,
     verifyCode,
     requestChangePassword,
     changePassword,

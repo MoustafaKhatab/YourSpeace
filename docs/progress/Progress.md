@@ -51,7 +51,7 @@
 |------|--------|----------|
 | Schema: `users`, `sessions`, `password_reset_codes`, `user_role` | Done | `schema.sql`, [db.md](../setup/db.md) |
 | Register / login (sessionful) | Done | auth routes/services/rep |
-| Logout + `GET /auth/me` | Done | `x-session-id` header |
+| Logout | Done | `x-session-id` header |
 | Forget / reset password (API + DB) | Done | `password_reset_codes` |
 | Middleware: `sessionAuth`, `authorize` | Done | `session_auth.js`, `authorize.js` |
 | Auth API docs | Done | [api.md](../setup/api.md) |
@@ -62,7 +62,7 @@
 
 | Item | Status | Artifact |
 |------|--------|----------|
-| Customer profile retrieval (SCRUM-18) | Done | `GET /api/auth/me` |
+| Customer profile retrieval (SCRUM-18) | Done | `GET /api/customer/me` |
 | Customer profile update (SCRUM-19) | Done | `PUT /api/customer/me` |
 | Address update (SCRUM-20) | Done | `PUT /api/address/update/:address_id` |
 | Customer logout (SCRUM-22) | Done | `POST /api/auth/logout` |

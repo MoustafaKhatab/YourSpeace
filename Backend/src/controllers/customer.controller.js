@@ -1,5 +1,18 @@
 const customerService = require('../services/customer.service');
 
+const getCustomerProfile = async (req, res) => {
+    try {
+        if (req.user) {
+            return res.status(200).json({ user: req.user });
+        }
+
+        return res.status(401).json({ message: 'Unauthorized' });
+    } catch (error) {
+        console.error('Get customer profile error:', error.message);
+        return res.status(500).json({ message: 'Failed to get current user' });
+    }
+};
+
 const updateCustomer = async (req, res) => {
     try {
         const { user_id } = req.user;
@@ -30,5 +43,6 @@ const updateCustomer = async (req, res) => {
 };
 
 module.exports = {
+    getCustomerProfile,
     updateCustomer,
 };
