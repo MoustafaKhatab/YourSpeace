@@ -1,0 +1,38 @@
+const storeRepository = require('../rep/store.repository');
+
+const createStore = async (seller_id, name, description) => {
+    const existingBySeller = await storeRepository.getStoreBySellerId(seller_id);
+    if (existingBySeller) {
+        const error = new Error('Seller already has a store');
+        error.statusCode = 409;
+        throw error;
+    }
+
+    const existingByName = await storeRepository.getStoreByName(name);
+    if (existingByName) {
+        const error = new Error('Store name already exists');
+        error.statusCode = 409;
+        throw error;
+    }
+
+    try {
+        const newStore = await storeRepository.createStore(seller_id, name, description);
+        if (!newStore) {
+            const error = new Error('Failed to create store');
+            error.statusCode = 400;
+            throw error;
+        }
+        return newStore;
+    } catch (error) {
+        if (error.code === '23505') {
+            const conflict = new Error('Store already exists for this seller or name is taken');
+            conflict.statusCode = 409;
+            throw conflict;
+        }
+        throw error;
+    }
+};
+
+module.exports = {
+    createStore,
+};

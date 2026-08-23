@@ -131,6 +131,27 @@ const checkUserRole = async (user_id, requiredRole) => {
     return { user };
 };
 
+/** Uses req.user from sessionAuth — no extra user fetch for role check. Loads seller_id when role is SELLER. */
+const authorizeRole = async (user, requiredRole) => {
+    if (!user || user.role !== requiredRole) {
+        const error = new Error(`Forbidden: requires ${requiredRole} role`);
+        error.statusCode = 403;
+        throw error;
+    }
+
+    if (requiredRole === 'SELLER') {
+        const sellerRow = await authRepository.getUserById(user.user_id, 'SELLER');
+        if (!sellerRow || !sellerRow.seller_id) {
+            const error = new Error('Seller profile not found');
+            error.statusCode = 404;
+            throw error;
+        }
+        return { seller_id: sellerRow.seller_id };
+    }
+
+    return {};
+};
+
 const getUserByEmail = async (email) => {
     const user = await authRepository.getUserByEmail(email);
     if (!user) {
@@ -199,6 +220,7 @@ module.exports = {
     getUserByEmail,
     checkSessionExpiration,
     checkUserRole,
+    authorizeRole,
     createCodeVerifier,
     resetPassword,
     changePassword,

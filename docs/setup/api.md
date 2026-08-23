@@ -601,7 +601,7 @@ Do **not** send `email` in the body.
 ## Seller profile
 
 Requires `x-session-id` + `sessionAuth` + `authorize('SELLER')`.  
-`user_id` comes from the session; SQL joins `users` + `sellers` where `role = 'SELLER'`.
+`user_id` comes from the session; `authorize('SELLER')` also loads `seller_id` via JOIN `users` + `sellers`.
 
 ### `GET /api/seller/me`
 
@@ -639,6 +639,57 @@ Requires `x-session-id` + `sessionAuth` + `authorize('SELLER')`.
 
 ---
 
+## Store
+
+Requires `x-session-id` + `sessionAuth` + `authorize('SELLER')`.  
+`seller_id` is **not** taken from the client. `authorize('SELLER')` loads it server-side (JOIN `users` + `sellers`) and sets `req.seller_id`. One store per seller (`stores.seller_id` UNIQUE).
+
+### `POST /api/store/create-store`
+
+**Headers**
+| Key | Value |
+|-----|--------|
+| `x-session-id` | session from login/register (SELLER) |
+| `Content-Type` | `application/json` |
+
+**Body**
+```json
+{
+  "name": "My Shop",
+  "description": "Optional store description"
+}
+```
+
+- `name` — required, trimmed, max **255** characters  
+- `description` — optional, trimmed, max **5000** characters  
+
+**Response `201`**
+```json
+{
+  "message": "Store created successfully",
+  "store": {
+    "store_id": "1",
+    "seller_id": "1",
+    "name": "My Shop",
+    "description": "Optional store description",
+    "logo_url": null,
+    "created_at": "...",
+    "updated_at": "..."
+  }
+}
+```
+
+**Errors**
+| Status | When |
+|--------|------|
+| `400` | Missing/invalid `name` or too-long fields |
+| `401` | Missing/invalid session |
+| `403` | Not a SELLER |
+| `404` | No seller profile for this user |
+| `409` | Seller already has a store, or store name taken |
+
+---
+
 ## Not implemented yet
 
 - Changing account email (verification flow)
@@ -660,4 +711,5 @@ Email: `src/utils/mailer.js` + templates in `src/utils/emailTemplates.js`
 | Address | `address.routes.js` | `address.controller.js` | `address.service.js` | `address.repository.js` |
 | Customer | `customer.routes.js` | `customer.controller.js` | `customer.service.js` | `customer.repository.js` |
 | Seller | `seller.routes.js` | `seller.controller.js` | `seller.service.js` | `auth.repository.js` (JOIN via `getUserById`) |
+| Store | `store.routes.js` | `store.controller.js` | `store.service.js` | `store.repository.js` (`req.seller_id` from `authorize`) |
 | Health | `health.routes.js` | `health.controller.js` | `health.service.js` | — |

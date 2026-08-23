@@ -121,6 +121,7 @@ PGPASSWORD=postgres psql -h localhost -U postgres -d yourspeace -f Backend/Datab
 | `sessions` | Sessionful auth tokens (`session_id`, `expires_at`) |
 | `password_reset_codes` | Email codes (`code_verifier`, `verified`, `used`, `expires_at`) — verify via `reset-password/verify-code` (forget) or `verify-code` (change) before apply |
 | `sellers` | Optional seller profile (1 user → 0..1 seller) |
+| `stores` | Store owned by one seller (1 seller → 0..1 store) |
 
 ### `users`
 - `user_id` PK  
@@ -156,6 +157,14 @@ Expiry checks run only in the verify endpoints; apply-password steps require `ve
 ### `sellers`
 - `seller_id` PK  
 - `user_id` FK → `users` (ON DELETE CASCADE, **UNIQUE** — one seller profile per user)  
+- `created_at`, `updated_at`
+
+### `stores`
+- `store_id` PK  
+- `seller_id` FK → `sellers` (ON DELETE CASCADE, **UNIQUE** — one store per seller)  
+- `name`  
+- `description` (optional)  
+- `logo_url` (optional)  
 - `created_at`, `updated_at`
 
 ---

@@ -7,12 +7,24 @@
 
 ## Current focus
 
-**Sprint 2 – Users** — SCRUM-21 full change-password flow is Done. Still To Do:
+**Active: Sprint 4 – Store & Product Management** (22 Aug – 29 Aug)
+
+**On hold: Sprint 3 – Shopping Cart Management** (29 Aug – 5 Sep) — paused while Sprint 4 runs.
 
 | Ticket | Item | Status |
 |--------|------|--------|
-| SCRUM-23 | Validation and authorization for these operations | To Do |
-| SCRUM-24 | API testing | To Do |
+| SCRUM-33 | Seller Profile Creation | Done |
+| SCRUM-34 | Store Creation | Done |
+| SCRUM-35 | Store Retrieval | To Do |
+| SCRUM-36 | Store Update | To Do |
+| SCRUM-37 | Category Retrieval | To Do |
+| SCRUM-38 | Product Creation | To Do |
+| SCRUM-39 | Product Retrieval | To Do |
+| SCRUM-40 | Product Update | To Do |
+| SCRUM-41 | Product Variant Creation | To Do |
+| SCRUM-42 | Product Variant Management | To Do |
+| SCRUM-43 | Product Image Management | To Do |
+| SCRUM-44 | Product Category Assignment | To Do |
 
 **Jira Board**
 
@@ -22,9 +34,11 @@
 
 ## Latest completed
 
+- **SCRUM-34 Store Creation** — `POST /api/store/create-store`; `req.seller_id` from `authorize('SELLER')` (not from client); name validation; one store per seller
+- **SCRUM-33 Seller Profile** — register as SELLER + `GET /api/seller/me`; `authorize('SELLER')` sets `req.seller_id`
 - **Separate reset verify API** — `POST /api/auth/reset-password/verify-code` (email from body / Gmail flow, no session); `POST /verify-code` is session-only for change-password
 - **SCRUM-21 Change password (complete)** — request → verify-code (sets `verified`) → change-password; reset uses `reset-password/verify-code`; HTML templates in `emailTemplates.js`
-- Sprint 2: customer profile, address CRUD, logout, seller register + `GET /seller/me`
+- Sprint 2: customer profile, address CRUD, logout
 - Sprint 1: sessionful auth, session/role middleware
 - Sprint 0: foundation, domain/ERD, backend scaffold, PostgreSQL
 
@@ -69,10 +83,44 @@
 | Customer logout (SCRUM-22) | Done | `POST /api/auth/logout` |
 | Address create / get / delete | Done | address.*, [api.md](../setup/api.md) |
 | Change password (SCRUM-21) | Done | request + session `verify-code` + PUT; reset uses email-only verify |
-| Seller register (`role: SELLER`) | Done | `users` + `sellers` transaction on register |
-| Seller profile GET /seller/me | Done | `sessionAuth` + `authorize('SELLER')`; users ⋈ sellers |
 | Validation and authorization (SCRUM-23) | To Do | — |
 | API testing (SCRUM-24) | To Do | — |
+
+---
+
+### Sprint 3 – Shopping Cart Management *(On Hold)*
+
+> Dates: **29 Aug – 5 Sep**. Paused while Sprint 4 (Store & Product) is active.
+
+| Ticket | Item | Status |
+|--------|------|--------|
+| SCRUM-26 | Implement Cart Retrieval | On Hold |
+| SCRUM-27 | Implement Add to Cart | On Hold |
+| SCRUM-28 | Implement Cart Item Quantity Update | On Hold |
+| SCRUM-29 | Implement Remove from Cart | On Hold |
+| SCRUM-30 | Implement Clear Cart | On Hold |
+| SCRUM-31 | Test Complete Cart Flow | On Hold |
+
+---
+
+### Sprint 4 – Store & Product Management *(Active)*
+
+> Dates: **22 Aug – 29 Aug**. Current sprint.
+
+| Ticket | Item | Status | Artifact |
+|--------|------|--------|----------|
+| SCRUM-33 | Seller Profile Creation | Done | register `SELLER` + `GET /api/seller/me`; `authorize` sets `req.seller_id` |
+| SCRUM-34 | Store Creation | Done | `POST /api/store/create-store`; `stores` table; one store per seller |
+| SCRUM-35 | Store Retrieval | To Do | — |
+| SCRUM-36 | Store Update | To Do | — |
+| SCRUM-37 | Category Retrieval | To Do | — |
+| SCRUM-38 | Product Creation | To Do | — |
+| SCRUM-39 | Product Retrieval | To Do | — |
+| SCRUM-40 | Product Update | To Do | — |
+| SCRUM-41 | Product Variant Creation | To Do | — |
+| SCRUM-42 | Product Variant Management | To Do | — |
+| SCRUM-43 | Product Image Management | To Do | — |
+| SCRUM-44 | Product Category Assignment | To Do | — |
 
 ---
 

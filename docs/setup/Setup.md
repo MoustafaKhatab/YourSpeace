@@ -34,7 +34,7 @@ Brief guide for running the project so far.
 cd Backend
 npm install
 cp .env.example .env   # edit DB_* and GMAIL_* 
-npm run db             # apply schema (users, addresses, sessions, password_reset_codes, sellers)
+npm run db             # apply schema (users, addresses, sessions, password_reset_codes, sellers, stores)
 npm run dev
 ```
 
@@ -80,13 +80,14 @@ PUT    http://localhost:3000/api/auth/change-password
 GET    http://localhost:3000/api/customer/me
 PUT    http://localhost:3000/api/customer/me
 GET    http://localhost:3000/api/seller/me
+POST   http://localhost:3000/api/store/create-store
 POST   http://localhost:3000/api/address/create
 GET    http://localhost:3000/api/address/get
 PUT    http://localhost:3000/api/address/update/:address_id
 DELETE http://localhost:3000/api/address/delete/:address_id
 ```
 
-Protected with `x-session-id`: change-password flow (`/verify-code`, request, PUT), me, customer, address.  
+Protected with `x-session-id`: change-password flow (`/verify-code`, request, PUT), me, customer, seller, store, address.  
 Public (email in body): `forget-password`, `reset-password/verify-code`, `reset-password`.
 
 API endpoints are tested with **Postman**. Full request/response shapes: [api.md](api.md).
@@ -122,7 +123,7 @@ YourSpeace/
     └── src/
         ├── app.js
         ├── server.js
-        ├── routes/            # health, auth, address, customer, seller
+        ├── routes/            # health, auth, address, customer, seller, store
         ├── controllers/
         ├── services/
         ├── rep/               # Repository (SQL)
@@ -141,4 +142,5 @@ Examples:
 - `/api/auth/*` → `auth.controller` → `auth.service` → `auth.repository` (+ `mailer` / `emailTemplates` on password emails; `sessionAuth` on change-password + `/verify-code`; reset verify is public)
 - `/api/customer/*` → `sessionAuth` → `customer.controller` → `customer.service` → `customer.repository`
 - `/api/seller/*` → `sessionAuth` + `authorize('SELLER')` → `seller.controller` → `seller.service` → `auth.repository` (user + sellers JOIN)
+- `/api/store/*` → `sessionAuth` + `authorize('SELLER')` (sets `req.seller_id`) → `store.controller` → `store.service` → `store.repository`
 - `/api/address/*` → `sessionAuth` + `authorize('CUSTOMER')` → `address.controller` → `address.service` → `address.repository`
