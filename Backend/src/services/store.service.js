@@ -33,23 +33,53 @@ const createStore = async (seller_id, name, description) => {
     }
 };
 
-const getUserStoreBySellerId = async (seller_id) =>{
-    try{
-        const store = await storeRepository.getStoreBySellerId(seller_id);
-        if(!store){
+const getUserStoreBySellerId = async (seller_id) => {
+    const store = await storeRepository.getStoreBySellerId(seller_id);
+    if (!store) {
+        const error = new Error('Store not found');
+        error.statusCode = 404;
+        throw error;
+    }
+    return store;
+};
+
+const updateUserStoreBySellerId = async (seller_id, name, description, logo_url) => {
+    const existingStore = await storeRepository.getStoreBySellerId(seller_id);
+    if (!existingStore) {
+        const error = new Error('Store not found');
+        error.statusCode = 404;
+        throw error;
+    }
+
+    if (name !== undefined) {
+        const existingByName = await storeRepository.getStoreByName(name);
+        if (existingByName && String(existingByName.seller_id) !== String(seller_id)) {
+            const error = new Error('Store name already exists');
+            error.statusCode = 409;
+            throw error;
+        }
+    }
+
+    try {
+        const store = await storeRepository.updateStore(seller_id, name, description, logo_url);
+        if (!store) {
             const error = new Error('Store not found');
             error.statusCode = 404;
             throw error;
         }
         return store;
-
-    }catch(error){
+    } catch (error) {
+        if (error.code === '23505') {
+            const conflict = new Error('Store name already exists');
+            conflict.statusCode = 409;
+            throw conflict;
+        }
         throw error;
     }
-
-}
+};
 
 module.exports = {
     createStore,
-    getUserStoreBySellerId
+    getUserStoreBySellerId,
+    updateUserStoreBySellerId,
 };

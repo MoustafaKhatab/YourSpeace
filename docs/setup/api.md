@@ -724,6 +724,56 @@ Returns the authenticated seller’s store (looked up by `req.user.seller_id`).
 
 ---
 
+### `PUT /api/store/update-user-store`
+
+Partial update of the authenticated seller’s store. Only fields present in the body are changed (`COALESCE` in SQL). Sets `updated_at`.
+
+**Headers**
+| Key | Value |
+|-----|--------|
+| `x-session-id` | session from login/register (SELLER) |
+| `Content-Type` | `application/json` |
+
+**Body** (at least one field required)
+```json
+{
+  "name": "Updated Shop",
+  "description": "New description",
+  "logo_url": "https://cdn.example.com/logo.png"
+}
+```
+
+- `name` — optional; if sent: trimmed, non-empty, max **255**; must not collide with another seller’s store  
+- `description` — optional; if sent: trimmed, non-empty, max **5000**  
+- `logo_url` — optional; if sent: trimmed, non-empty, max **500**, must start with `http://` or `https://`  
+
+**Response `200`**
+```json
+{
+  "message": "User store updated successfully",
+  "store": {
+    "store_id": "1",
+    "seller_id": "1",
+    "name": "Updated Shop",
+    "description": "New description",
+    "logo_url": "https://cdn.example.com/logo.png",
+    "created_at": "...",
+    "updated_at": "..."
+  }
+}
+```
+
+**Errors**
+| Status | When |
+|--------|------|
+| `400` | No fields / empty / too long / invalid `logo_url` |
+| `401` | Missing/invalid session |
+| `403` | Not a SELLER |
+| `404` | No seller profile or no store |
+| `409` | Store name taken by another seller |
+
+---
+
 ## Not implemented yet
 
 - Changing account email (verification flow)

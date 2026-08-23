@@ -82,6 +82,7 @@ PUT    http://localhost:3000/api/customer/me
 GET    http://localhost:3000/api/seller/me
 POST   http://localhost:3000/api/store/create-store
 GET    http://localhost:3000/api/store/get-user-store
+PUT    http://localhost:3000/api/store/update-user-store
 POST   http://localhost:3000/api/address/create
 GET    http://localhost:3000/api/address/get
 PUT    http://localhost:3000/api/address/update/:address_id

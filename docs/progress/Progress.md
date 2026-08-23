@@ -16,7 +16,7 @@
 | SCRUM-33 | Seller Profile Creation | Done |
 | SCRUM-34 | Store Creation | Done |
 | SCRUM-35 | Store Retrieval | Done |
-| SCRUM-36 | Store Update | To Do |
+| SCRUM-36 | Store Update | Done |
 | SCRUM-37 | Category Retrieval | To Do |
 | SCRUM-38 | Product Creation | To Do |
 | SCRUM-39 | Product Retrieval | To Do |
@@ -34,6 +34,7 @@
 
 ## Latest completed
 
+- **SCRUM-36 Store Update** — `PUT /api/store/update-user-store`; partial fields + validation; name uniqueness; `updated_at`
 - **SCRUM-35 Store Retrieval** — `GET /api/store/get-user-store`; uses `req.user.seller_id` from `authorize('SELLER')`
 - **SCRUM-34 Store Creation** — `POST /api/store/create-store`; `req.user.seller_id` from `authorize('SELLER')` (not from client); name validation; one store per seller
 - **SCRUM-33 Seller Profile** — register as SELLER + `GET /api/seller/me`; `authorize('SELLER')` sets `req.user.seller_id`
@@ -113,7 +114,7 @@
 | SCRUM-33 | Seller Profile Creation | Done | register `SELLER` + `GET /api/seller/me`; `authorize` sets `req.user.seller_id` |
 | SCRUM-34 | Store Creation | Done | `POST /api/store/create-store`; `stores` table; one store per seller |
 | SCRUM-35 | Store Retrieval | Done | `GET /api/store/get-user-store`; by `req.user.seller_id` |
-| SCRUM-36 | Store Update | To Do | — |
+| SCRUM-36 | Store Update | Done | `PUT /api/store/update-user-store`; partial update + uniqueness |
 | SCRUM-37 | Category Retrieval | To Do | — |
 | SCRUM-38 | Product Creation | To Do | — |
 | SCRUM-39 | Product Retrieval | To Do | — |
