@@ -148,8 +148,9 @@ const createCodeVerifier = async (email, code_verifier, expires_at) => {
 };
 
 /**
- * Applies new password only if the code was already verified via /auth/verify-code.
- * Does not re-run expiry validation — that belongs to verify-code only.
+ * Applies new password only if the code was already verified
+ * (reset: POST /auth/reset-password/verify-code; change: POST /auth/verify-code).
+ * Does not re-run expiry validation — that belongs to the verify step only.
  */
 const resetPasswordWithCode = async (email, code_verifier, hashedPassword) => {
     const client = await pool.connect();
@@ -180,7 +181,9 @@ const resetPasswordWithCode = async (email, code_verifier, hashedPassword) => {
             throw error;
         }
         if (!codeRow.verified) {
-            const error = new Error('Code not verified. Call /api/auth/verify-code first');
+            const error = new Error(
+                'Code not verified. Call /api/auth/reset-password/verify-code (forget flow) or /api/auth/verify-code (change flow) first'
+            );
             error.statusCode = 400;
             throw error;
         }

@@ -33,11 +33,11 @@ Flow uses DB sessions (`sessions` table) and password reset codes (`password_res
 Register / Login  →  returns user + session
 Logout            →  x-session-id header → find user → delete that session
 Forget password   →  email in body → create code_verifier → HTML email (Gmail)
-Verify code       →  REQUIRED before reset/change (sets verified=true; checks expiry here only)
+Verify reset code →  POST /reset-password/verify-code (email + code from body; no session)
 Reset password    →  email + code_verifier + new_password (code must be verified)
 Change password   →  (any logged-in role)
   1) POST /change-password/request → email code to session user
-  2) POST /verify-code → marks code verified
+  2) POST /verify-code → marks code verified (session only)
   3) PUT  /change-password → requires verified code → update + invalidate sessions
 ```
 
@@ -142,7 +142,7 @@ Requires `GMAIL_USER` and `GMAIL_APP_PASSWORD` in `Backend/.env` (see [Setup.md]
 }
 ```
 
-Then open the inbox for that email, copy the `code_verifier`, and call **reset-password**.
+Then open the inbox for that email, copy the `code_verifier`, call **`POST /reset-password/verify-code`**, then **reset-password**.
 
 **Errors**
 | Status | When |
@@ -153,10 +153,40 @@ Then open the inbox for that email, copy the `code_verifier`, and call **reset-p
 
 ---
 
+### `POST /api/auth/reset-password/verify-code`
+
+**Forget/reset step 2** — public (no session). Email comes from the body only (the address that received the Gmail code). Ignores any `x-session-id`.
+
+This is the **only** place that validates expiry / unused for the forget flow. On success it sets `verified = true` (does not mark `used`).
+
+**Body**
+```json
+{
+  "email": "user@example.com",
+  "code_verifier": "uuid-from-email"
+}
+```
+
+**Response `200`**
+```json
+{
+  "message": "Code verified successfully",
+  "verified": true,
+  "expires_at": "..."
+}
+```
+
+**Errors**
+| Status | When |
+|--------|------|
+| `400` | Missing fields / invalid / used / expired code |
+
+---
+
 ### `POST /api/auth/reset-password`
 
-**Requires a prior successful `POST /auth/verify-code`.**  
-Applies the new password only if the code has `verified = true`. Expiry is **not** re-checked here (that happens only in verify-code).
+**Requires a prior successful `POST /auth/reset-password/verify-code`.**  
+Applies the new password only if the code has `verified = true`. Expiry is **not** re-checked here (that happens only in verify).
 
 Verifies `email` + `code_verifier` (+ verified flag), then in a **DB transaction**:
 1. Update password  
@@ -199,29 +229,19 @@ After a successful reset, the old `session_id` no longer works (sessions were de
 
 ### `POST /api/auth/verify-code`
 
-**Required step** before `reset-password` or `change-password`.  
-This is the **only** place that validates expiry / unused. On success it sets `verified = true` on the code (does not mark `used`).
+**Change-password step 2** — requires `x-session-id`. Email always from the session (never from body).
 
-**Logged-in (change-password):** send `x-session-id` — email comes from the session.  
-**Not logged-in (forget-password):** send `email` in the body.
+This is the **only** place that validates expiry / unused for the change-password flow. On success it sets `verified = true` (does not mark `used`).
 
-**Headers (optional session)**
+**Headers**
 | Key | Value |
 |-----|--------|
-| `x-session-id` | session from login (optional) |
+| `x-session-id` | session from login |
 | `Content-Type` | `application/json` |
 
-**Body (logged-in)**
+**Body**
 ```json
 {
-  "code_verifier": "uuid-from-email"
-}
-```
-
-**Body (forget flow)**
-```json
-{
-  "email": "user@example.com",
   "code_verifier": "uuid-from-email"
 }
 ```
@@ -239,7 +259,7 @@ This is the **only** place that validates expiry / unused. On success it sets `v
 | Status | When |
 |--------|------|
 | `400` | Missing fields / invalid / used / expired code |
-| `401` | Invalid session (only if `x-session-id` was sent) |
+| `401` | Missing / invalid session |
 
 ---
 

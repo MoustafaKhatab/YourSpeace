@@ -176,31 +176,49 @@ const logout = async (req, res) => {
     }
 };
 
-// Marks code as verified (required before change-password / reset-password).
-// Logged-in: email from session. Not logged-in (forget flow): email from body.
-const verifyCode = async (req, res) => {
+/**
+ * Forget/reset flow only — no session.
+ * Email + code_verifier from body (code arrived via Gmail).
+ */
+const verifyResetPasswordCode = async (req, res) => {
     try {
-        const { code_verifier, email: bodyEmail } = req.body || {};
-        let email;
+        const { email, code_verifier } = req.body || {};
 
-        if (req.user) {
-            email = req.user.email;
-        } else if (bodyEmail) {
-            if (!isValidEmail(bodyEmail)) {
-                return res.status(400).json({ message: 'Invalid email' });
-            }
-            email = bodyEmail;
-        } else {
+        if (!email || !code_verifier) {
             return res.status(400).json({
-                message: 'Email is required when not logged in (or send x-session-id)',
+                message: 'email and code_verifier are required',
             });
         }
+        if (!isValidEmail(email)) {
+            return res.status(400).json({ message: 'Invalid email' });
+        }
 
+        const result = await authService.verifyCode(email, code_verifier);
+        return res.status(200).json(result);
+    } catch (error) {
+        if (error.statusCode === 400 || error.statusCode === 404) {
+            return res.status(error.statusCode).json({ message: error.message });
+        }
+
+        console.error('Verify reset-password code error:', error.message);
+        return res.status(500).json({ message: 'Failed to verify code' });
+    }
+};
+
+/** Change-password step 2 — email always from session (never from body). */
+const verifyCode = async (req, res) => {
+    try {
+        const user = req.user;
+        if (!user) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
+
+        const { code_verifier } = req.body || {};
         if (!code_verifier) {
             return res.status(400).json({ message: 'Code verifier is required' });
         }
 
-        const result = await authService.verifyCode(email, code_verifier);
+        const result = await authService.verifyCode(user.email, code_verifier);
         return res.status(200).json(result);
     } catch (error) {
         if (error.statusCode === 400 || error.statusCode === 404) {
@@ -310,6 +328,7 @@ module.exports = {
     register,
     login,
     forgetPassword,
+    verifyResetPasswordCode,
     resetPassword,
     logout,
     verifyCode,

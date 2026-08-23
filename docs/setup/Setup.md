@@ -72,6 +72,7 @@ GET    http://localhost:3000/api/health
 POST   http://localhost:3000/api/auth/register
 POST   http://localhost:3000/api/auth/login
 POST   http://localhost:3000/api/auth/forget-password
+POST   http://localhost:3000/api/auth/reset-password/verify-code
 POST   http://localhost:3000/api/auth/reset-password
 POST   http://localhost:3000/api/auth/change-password/request
 POST   http://localhost:3000/api/auth/verify-code
@@ -85,7 +86,8 @@ PUT    http://localhost:3000/api/address/update/:address_id
 DELETE http://localhost:3000/api/address/delete/:address_id
 ```
 
-Protected with `x-session-id`: change-password flow, verify-code, me, customer, address.
+Protected with `x-session-id`: change-password flow (`/verify-code`, request, PUT), me, customer, address.  
+Public (email in body): `forget-password`, `reset-password/verify-code`, `reset-password`.
 
 API endpoints are tested with **Postman**. Full request/response shapes: [api.md](api.md).
 
@@ -136,7 +138,7 @@ Route → Middleware (optional) → Controller → Service → Repository (rep) 
 
 Examples:
 - `/api/health` → `health.controller` → `health.service`
-- `/api/auth/*` → `auth.controller` → `auth.service` → `auth.repository` (+ `mailer` / `emailTemplates` on password emails; `sessionAuth` on change-password / verify-code / me)
+- `/api/auth/*` → `auth.controller` → `auth.service` → `auth.repository` (+ `mailer` / `emailTemplates` on password emails; `sessionAuth` on change-password + `/verify-code`; reset verify is public)
 - `/api/customer/*` → `sessionAuth` → `customer.controller` → `customer.service` → `customer.repository`
 - `/api/seller/*` → `sessionAuth` + `authorize('SELLER')` → `seller.controller` → `seller.service` → `auth.repository` (user + sellers JOIN)
 - `/api/address/*` → `sessionAuth` + `authorize('CUSTOMER')` → `address.controller` → `address.service` → `address.repository`

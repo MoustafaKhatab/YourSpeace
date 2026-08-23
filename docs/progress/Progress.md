@@ -22,7 +22,8 @@
 
 ## Latest completed
 
-- **SCRUM-21 Change password (complete)** — request → verify-code (sets `verified`) → change-password; reset also requires verify-code; HTML templates in `emailTemplates.js`
+- **Separate reset verify API** — `POST /api/auth/reset-password/verify-code` (email from body / Gmail flow, no session); `POST /verify-code` is session-only for change-password
+- **SCRUM-21 Change password (complete)** — request → verify-code (sets `verified`) → change-password; reset uses `reset-password/verify-code`; HTML templates in `emailTemplates.js`
 - Sprint 2: customer profile, address CRUD, logout, seller register + `GET /seller/me`
 - Sprint 1: sessionful auth, session/role middleware
 - Sprint 0: foundation, domain/ERD, backend scaffold, PostgreSQL
@@ -52,7 +53,7 @@
 | Schema: `users`, `sessions`, `password_reset_codes`, `user_role` | Done | `schema.sql`, [db.md](../setup/db.md) |
 | Register / login (sessionful) | Done | auth routes/services/rep |
 | Logout | Done | `x-session-id` header |
-| Forget / reset password (API + DB) | Done | `password_reset_codes` |
+| Forget / reset password (API + DB) | Done | `forget` → `reset-password/verify-code` → `reset-password` |
 | Middleware: `sessionAuth`, `authorize` | Done | `session_auth.js`, `authorize.js` |
 | Auth API docs | Done | [api.md](../setup/api.md) |
 
@@ -67,7 +68,7 @@
 | Address update (SCRUM-20) | Done | `PUT /api/address/update/:address_id` |
 | Customer logout (SCRUM-22) | Done | `POST /api/auth/logout` |
 | Address create / get / delete | Done | address.*, [api.md](../setup/api.md) |
-| Change password (SCRUM-21) | Done | request + verify-code (`verified` flag) + PUT change-password; `emailTemplates.js` |
+| Change password (SCRUM-21) | Done | request + session `verify-code` + PUT; reset uses email-only verify |
 | Seller register (`role: SELLER`) | Done | `users` + `sellers` transaction on register |
 | Seller profile GET /seller/me | Done | `sessionAuth` + `authorize('SELLER')`; users ⋈ sellers |
 | Validation and authorization (SCRUM-23) | To Do | — |
