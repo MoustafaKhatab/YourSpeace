@@ -4,7 +4,7 @@ const authService = require('../services/auth.service');
  * Role-based authorization.
  * Required role is set in code (never from the client body).
  *
- * For SELLER routes, also sets req.seller_id (server-side JOIN — never from client).
+ * For SELLER routes, also sets req.user.seller_id (server-side JOIN — never from client).
  *
  * Usage:
  *   router.get('/seller/dashboard', sessionAuth, authorize('SELLER'), handler)
@@ -19,7 +19,7 @@ const authorize = (requiredRole) => {
 
             const context = await authService.authorizeRole(req.user, requiredRole);
             if (context.seller_id) {
-                req.seller_id = context.seller_id;
+                req.user.seller_id = context.seller_id;
             }
 
             next();

@@ -33,6 +33,23 @@ const createStore = async (seller_id, name, description) => {
     }
 };
 
+const getUserStoreBySellerId = async (seller_id) =>{
+    try{
+        const store = await storeRepository.getStoreBySellerId(seller_id);
+        if(!store){
+            const error = new Error('Store not found');
+            error.statusCode = 404;
+            throw error;
+        }
+        return store;
+
+    }catch(error){
+        throw error;
+    }
+
+}
+
 module.exports = {
     createStore,
+    getUserStoreBySellerId
 };

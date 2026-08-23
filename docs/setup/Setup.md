@@ -81,6 +81,7 @@ GET    http://localhost:3000/api/customer/me
 PUT    http://localhost:3000/api/customer/me
 GET    http://localhost:3000/api/seller/me
 POST   http://localhost:3000/api/store/create-store
+GET    http://localhost:3000/api/store/get-user-store
 POST   http://localhost:3000/api/address/create
 GET    http://localhost:3000/api/address/get
 PUT    http://localhost:3000/api/address/update/:address_id
@@ -142,5 +143,5 @@ Examples:
 - `/api/auth/*` → `auth.controller` → `auth.service` → `auth.repository` (+ `mailer` / `emailTemplates` on password emails; `sessionAuth` on change-password + `/verify-code`; reset verify is public)
 - `/api/customer/*` → `sessionAuth` → `customer.controller` → `customer.service` → `customer.repository`
 - `/api/seller/*` → `sessionAuth` + `authorize('SELLER')` → `seller.controller` → `seller.service` → `auth.repository` (user + sellers JOIN)
-- `/api/store/*` → `sessionAuth` + `authorize('SELLER')` (sets `req.seller_id`) → `store.controller` → `store.service` → `store.repository`
+- `/api/store/*` → `sessionAuth` + `authorize('SELLER')` (sets `req.user.seller_id`) → `store.controller` → `store.service` → `store.repository`
 - `/api/address/*` → `sessionAuth` + `authorize('CUSTOMER')` → `address.controller` → `address.service` → `address.repository`

@@ -15,7 +15,7 @@
 |--------|------|--------|
 | SCRUM-33 | Seller Profile Creation | Done |
 | SCRUM-34 | Store Creation | Done |
-| SCRUM-35 | Store Retrieval | To Do |
+| SCRUM-35 | Store Retrieval | Done |
 | SCRUM-36 | Store Update | To Do |
 | SCRUM-37 | Category Retrieval | To Do |
 | SCRUM-38 | Product Creation | To Do |
@@ -34,8 +34,9 @@
 
 ## Latest completed
 
-- **SCRUM-34 Store Creation** — `POST /api/store/create-store`; `req.seller_id` from `authorize('SELLER')` (not from client); name validation; one store per seller
-- **SCRUM-33 Seller Profile** — register as SELLER + `GET /api/seller/me`; `authorize('SELLER')` sets `req.seller_id`
+- **SCRUM-35 Store Retrieval** — `GET /api/store/get-user-store`; uses `req.user.seller_id` from `authorize('SELLER')`
+- **SCRUM-34 Store Creation** — `POST /api/store/create-store`; `req.user.seller_id` from `authorize('SELLER')` (not from client); name validation; one store per seller
+- **SCRUM-33 Seller Profile** — register as SELLER + `GET /api/seller/me`; `authorize('SELLER')` sets `req.user.seller_id`
 - **Separate reset verify API** — `POST /api/auth/reset-password/verify-code` (email from body / Gmail flow, no session); `POST /verify-code` is session-only for change-password
 - **SCRUM-21 Change password (complete)** — request → verify-code (sets `verified`) → change-password; reset uses `reset-password/verify-code`; HTML templates in `emailTemplates.js`
 - Sprint 2: customer profile, address CRUD, logout
@@ -109,9 +110,9 @@
 
 | Ticket | Item | Status | Artifact |
 |--------|------|--------|----------|
-| SCRUM-33 | Seller Profile Creation | Done | register `SELLER` + `GET /api/seller/me`; `authorize` sets `req.seller_id` |
+| SCRUM-33 | Seller Profile Creation | Done | register `SELLER` + `GET /api/seller/me`; `authorize` sets `req.user.seller_id` |
 | SCRUM-34 | Store Creation | Done | `POST /api/store/create-store`; `stores` table; one store per seller |
-| SCRUM-35 | Store Retrieval | To Do | — |
+| SCRUM-35 | Store Retrieval | Done | `GET /api/store/get-user-store`; by `req.user.seller_id` |
 | SCRUM-36 | Store Update | To Do | — |
 | SCRUM-37 | Category Retrieval | To Do | — |
 | SCRUM-38 | Product Creation | To Do | — |

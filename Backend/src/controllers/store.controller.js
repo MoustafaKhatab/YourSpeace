@@ -33,11 +33,11 @@ const createStore = async (req, res) => {
             }
         }
 
-        if (!req.seller_id) {
+        if (!user.seller_id) {
             return res.status(404).json({ message: 'Seller profile not found' });
         }
 
-        const store = await storeService.createStore(req.seller_id, trimmedName, trimmedDescription);
+        const store = await storeService.createStore(user.seller_id, trimmedName, trimmedDescription);
         return res.status(201).json({ message: 'Store created successfully', store });
     } catch (error) {
         if (error.statusCode === 400 || error.statusCode === 404 || error.statusCode === 409) {
@@ -49,6 +49,29 @@ const createStore = async (req, res) => {
     }
 };
 
+const getUserStore = async (req, res) => {
+    try {
+        const user = req.user;
+        if (!user) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
+        if (!user.seller_id) {
+            return res.status(404).json({ message: 'Seller profile not found' });
+        }
+
+        const store = await storeService.getUserStoreBySellerId(user.seller_id);
+        return res.status(200).json({ message: 'User store retrieved successfully', store });
+    } catch (error) {
+        if (error.statusCode === 404) {
+            return res.status(404).json({ message: error.message });
+        }
+
+        console.error('Get user store error:', error.message);
+        return res.status(500).json({ message: 'Failed to get user store' });
+    }
+};
+
 module.exports = {
     createStore,
+    getUserStore
 };
