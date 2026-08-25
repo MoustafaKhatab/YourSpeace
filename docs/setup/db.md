@@ -122,6 +122,9 @@ PGPASSWORD=postgres psql -h localhost -U postgres -d yourspeace -f Backend/Datab
 | `password_reset_codes` | Email codes (`code_verifier`, `verified`, `used`, `expires_at`) — verify via `reset-password/verify-code` (forget) or `verify-code` (change) before apply |
 | `sellers` | Optional seller profile (1 user → 0..1 seller) |
 | `stores` | Store owned by one seller (1 seller → 0..1 store) |
+| `categories` | Global category tree (`parent_id`); unique name per parent; sellers may create if missing |
+| `products` | Products belonging to a store |
+| `product_categories` | M:N link between products and categories |
 
 ### `users`
 - `user_id` PK  
@@ -166,6 +169,29 @@ Expiry checks run only in the verify endpoints; apply-password steps require `ve
 - `description` (optional)  
 - `logo_url` (optional)  
 - `created_at`, `updated_at`
+
+### `categories`
+- `category_id` PK  
+- `parent_id` FK → `categories` (optional, **ON DELETE SET NULL** — root has `NULL`)  
+- `name` — unique among siblings (same `parent_id`, case-insensitive), including roots  
+- `visible` (boolean, default `true`)  
+- `metadata` (JSONB, optional)  
+- `created_at`, `updated_at`  
+
+Not owned by a seller/store. Any **SELLER** may create a category/subcategory only if that name does not already exist under the same parent.
+
+### `products`
+- `product_id` PK  
+- `store_id` FK → `stores` (ON DELETE CASCADE)  
+- `title`  
+- `description` (optional)  
+- `hidden` (boolean, default `false`)  
+- `created_at`, `updated_at`
+
+### `product_categories`
+- Composite PK: (`product_id`, `category_id`)  
+- `product_id` FK → `products` (ON DELETE CASCADE)  
+- `category_id` FK → `categories` (ON DELETE CASCADE)
 
 ---
 
@@ -255,7 +281,7 @@ Backend/
     ├── apply_schema.js     # Used by npm run db
     ├── set_password.sql    # One-time: set postgres password
     ├── migrate_role_enum.sql # One-time: VARCHAR role → user_role enum
-    └── migrate_password_code_verified.sql # One-time: add verified column
+    └── migrate_categories_global.sql # One-time: drop categories.store_id; unique (parent, name)
 ```
 
 API usage: [api.md](api.md)

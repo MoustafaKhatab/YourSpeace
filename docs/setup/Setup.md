@@ -34,7 +34,7 @@ Brief guide for running the project so far.
 cd Backend
 npm install
 cp .env.example .env   # edit DB_* and GMAIL_* 
-npm run db             # apply schema (users, addresses, sessions, password_reset_codes, sellers, stores)
+npm run db             # apply schema (… stores, categories, products, product_categories)
 npm run dev
 ```
 
@@ -83,13 +83,14 @@ GET    http://localhost:3000/api/seller/me
 POST   http://localhost:3000/api/store/create-store
 GET    http://localhost:3000/api/store/get-user-store
 PUT    http://localhost:3000/api/store/update-user-store
+POST   http://localhost:3000/api/category/create-category
 POST   http://localhost:3000/api/address/create
 GET    http://localhost:3000/api/address/get
 PUT    http://localhost:3000/api/address/update/:address_id
 DELETE http://localhost:3000/api/address/delete/:address_id
 ```
 
-Protected with `x-session-id`: change-password flow (`/verify-code`, request, PUT), me, customer, seller, store, address.  
+Protected with `x-session-id`: change-password flow (`/verify-code`, request, PUT), me, customer, seller, store, category (create), address.  
 Public (email in body): `forget-password`, `reset-password/verify-code`, `reset-password`.
 
 API endpoints are tested with **Postman**. Full request/response shapes: [api.md](api.md).
@@ -145,4 +146,5 @@ Examples:
 - `/api/customer/*` → `sessionAuth` → `customer.controller` → `customer.service` → `customer.repository`
 - `/api/seller/*` → `sessionAuth` + `authorize('SELLER')` → `seller.controller` → `seller.service` → `auth.repository` (user + sellers JOIN)
 - `/api/store/*` → `sessionAuth` + `authorize('SELLER')` (sets `req.user.seller_id`) → `store.controller` → `store.service` → `store.repository`
+- `/api/category/*` → `sessionAuth` + `authorize('SELLER')` → `category.controller` → `category.service` → `category.repository` (global tree; unique name per parent)
 - `/api/address/*` → `sessionAuth` + `authorize('CUSTOMER')` → `address.controller` → `address.service` → `address.repository`

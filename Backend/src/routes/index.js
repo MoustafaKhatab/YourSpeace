@@ -5,6 +5,7 @@ const addressRoutes = require('./address.routes');
 const customerRoutes = require('./customer.routes');
 const sellerRoutes = require('./seller.routes');
 const storeRoutes = require('./store.routes');
+const categoryRoutes = require('./category.routes');
 const router = express.Router();
 
 
@@ -14,5 +15,6 @@ router.use('/address', addressRoutes);
 router.use('/customer', customerRoutes);
 router.use('/seller', sellerRoutes);
 router.use('/store', storeRoutes);
+router.use('/category', categoryRoutes);
 
 module.exports = router;

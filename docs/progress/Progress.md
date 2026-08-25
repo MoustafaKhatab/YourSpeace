@@ -17,7 +17,7 @@
 | SCRUM-34 | Store Creation | Done |
 | SCRUM-35 | Store Retrieval | Done |
 | SCRUM-36 | Store Update | Done |
-| SCRUM-37 | Category Retrieval | To Do |
+| SCRUM-37 | Category Retrieval | To Do (create API done) |
 | SCRUM-38 | Product Creation | To Do |
 | SCRUM-39 | Product Retrieval | To Do |
 | SCRUM-40 | Product Update | To Do |
@@ -34,6 +34,8 @@
 
 ## Latest completed
 
+- **Schema (Sprint 4)** — `categories` (global tree + unique name per parent), `products`, `product_categories`
+- **Category create (global)** — `POST /api/category/create-category`; sellers create shared categories only if name free under same parent; no store ownership
 - **SCRUM-36 Store Update** — `PUT /api/store/update-user-store`; partial fields + validation; name uniqueness; `updated_at`
 - **SCRUM-35 Store Retrieval** — `GET /api/store/get-user-store`; uses `req.user.seller_id` from `authorize('SELLER')`
 - **SCRUM-34 Store Creation** — `POST /api/store/create-store`; `req.user.seller_id` from `authorize('SELLER')` (not from client); name validation; one store per seller
@@ -115,8 +117,9 @@
 | SCRUM-34 | Store Creation | Done | `POST /api/store/create-store`; `stores` table; one store per seller |
 | SCRUM-35 | Store Retrieval | Done | `GET /api/store/get-user-store`; by `req.user.seller_id` |
 | SCRUM-36 | Store Update | Done | `PUT /api/store/update-user-store`; partial update + uniqueness |
+| — | Category create (ahead of SCRUM-37) | Done | `POST /api/category/create-category`; global tree; unique name per parent |
 | SCRUM-37 | Category Retrieval | To Do | — |
-| SCRUM-38 | Product Creation | To Do | — |
+| SCRUM-38 | Product Creation | To Do | schema: `products`, `product_categories` ready |
 | SCRUM-39 | Product Retrieval | To Do | — |
 | SCRUM-40 | Product Update | To Do | — |
 | SCRUM-41 | Product Variant Creation | To Do | — |

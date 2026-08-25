@@ -62,4 +62,35 @@ CREATE TABLE IF NOT EXISTS stores (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS categories (
+    category_id BIGSERIAL PRIMARY KEY,
+    parent_id BIGINT REFERENCES categories(category_id) ON DELETE SET NULL,
+    name VARCHAR(255) NOT NULL,
+    visible BOOLEAN NOT NULL DEFAULT TRUE,
+    metadata JSONB,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Same name allowed in different branches; not under the same parent (roots: parent_id NULL)
+CREATE UNIQUE INDEX IF NOT EXISTS categories_parent_name_unique
+    ON categories (COALESCE(parent_id, 0), LOWER(name));
+
+
+CREATE TABLE IF NOT EXISTS products (
+    product_id BIGSERIAL PRIMARY KEY,
+    store_id BIGINT NOT NULL REFERENCES stores(store_id) ON DELETE CASCADE,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    hidden BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS product_categories (
+    product_id BIGINT NOT NULL REFERENCES products(product_id) ON DELETE CASCADE,
+    category_id BIGINT NOT NULL REFERENCES categories(category_id) ON DELETE CASCADE,
+    PRIMARY KEY (product_id, category_id)
+);
+
 

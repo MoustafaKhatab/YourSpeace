@@ -774,9 +774,73 @@ Partial update of the authenticated seller’s store. Only fields present in the
 
 ---
 
+## Category (global tree)
+
+Requires `x-session-id` + `sessionAuth` + `authorize('SELLER')`.  
+Categories are **shared** (not tied to a store/seller). A seller can create a root or subcategory only if that **name does not already exist under the same parent** (case-insensitive).
+
+### `POST /api/category/create-category`
+
+**Headers**
+| Key | Value |
+|-----|--------|
+| `x-session-id` | session from login/register (SELLER) |
+| `Content-Type` | `application/json` |
+
+**Body (root category)**
+```json
+{
+  "name": "Electronics",
+  "visible": true,
+  "metadata": { "icon": "devices" }
+}
+```
+
+**Body (subcategory)** — `parent_id` must exist
+```json
+{
+  "name": "Phones",
+  "parent_id": 1,
+  "visible": true
+}
+```
+
+- `name` — required, trimmed, max **255**; unique under the same parent  
+- `visible` — optional boolean (default `true`)  
+- `metadata` — optional object  
+- `parent_id` — optional; omit/`null` = root  
+
+**Response `201`**
+```json
+{
+  "message": "Category created successfully",
+  "category": {
+    "category_id": "1",
+    "parent_id": null,
+    "name": "Electronics",
+    "visible": true,
+    "metadata": { "icon": "devices" },
+    "created_at": "...",
+    "updated_at": "..."
+  }
+}
+```
+
+**Errors**
+| Status | When |
+|--------|------|
+| `400` | Invalid name / visible / metadata / parent_id |
+| `401` | Missing/invalid session |
+| `403` | Not a SELLER |
+| `404` | Parent category not found |
+| `409` | Name already exists under that parent (or at root) |
+
+---
+
 ## Not implemented yet
 
 - Changing account email (verification flow)
+- Category list / get / update / delete (SCRUM-37+)
 
 ---
 
@@ -796,4 +860,5 @@ Email: `src/utils/mailer.js` + templates in `src/utils/emailTemplates.js`
 | Customer | `customer.routes.js` | `customer.controller.js` | `customer.service.js` | `customer.repository.js` |
 | Seller | `seller.routes.js` | `seller.controller.js` | `seller.service.js` | `auth.repository.js` (JOIN via `getUserById`) |
 | Store | `store.routes.js` | `store.controller.js` | `store.service.js` | `store.repository.js` (`req.user.seller_id` from `authorize`) |
+| Category | `category.routes.js` | `category.controller.js` | `category.service.js` | `category.repository.js` (global tree) |
 | Health | `health.routes.js` | `health.controller.js` | `health.service.js` | — |
