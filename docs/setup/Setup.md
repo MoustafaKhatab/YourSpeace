@@ -84,14 +84,18 @@ POST   http://localhost:3000/api/store/create-store
 GET    http://localhost:3000/api/store/get-user-store
 PUT    http://localhost:3000/api/store/update-user-store
 POST   http://localhost:3000/api/category/create-category
+GET    http://localhost:3000/api/category/get-categories
+POST   http://localhost:3000/api/product/create-product
+GET    http://localhost:3000/api/product/by-store/:store_name
+GET    http://localhost:3000/api/product/by-category/:category_id
 POST   http://localhost:3000/api/address/create
 GET    http://localhost:3000/api/address/get
 PUT    http://localhost:3000/api/address/update/:address_id
 DELETE http://localhost:3000/api/address/delete/:address_id
 ```
 
-Protected with `x-session-id`: change-password flow (`/verify-code`, request, PUT), me, customer, seller, store, category (create), address.  
-Public (email in body): `forget-password`, `reset-password/verify-code`, `reset-password`.
+Protected with `x-session-id`: change-password flow, me, customer, seller, store, category create, product create, address.  
+Public: `forget-password`, `reset-password/verify-code`, `reset-password`, `GET /category/get-categories`, `GET /product/by-store/:store_name`, `GET /product/by-category/:category_id`.
 
 API endpoints are tested with **Postman**. Full request/response shapes: [api.md](api.md).
 
@@ -146,5 +150,6 @@ Examples:
 - `/api/customer/*` → `sessionAuth` → `customer.controller` → `customer.service` → `customer.repository`
 - `/api/seller/*` → `sessionAuth` + `authorize('SELLER')` → `seller.controller` → `seller.service` → `auth.repository` (user + sellers JOIN)
 - `/api/store/*` → `sessionAuth` + `authorize('SELLER')` (sets `req.user.seller_id`) → `store.controller` → `store.service` → `store.repository`
-- `/api/category/*` → `sessionAuth` + `authorize('SELLER')` → `category.controller` → `category.service` → `category.repository` (global tree; unique name per parent)
+- `/api/category/*` → create: `sessionAuth` + `authorize('SELLER')`; list: public → `category.controller` → …
+- `/api/product/*` → create: seller auth; by-store / by-category: public → `product.controller` → `product.service` → `product.repository`
 - `/api/address/*` → `sessionAuth` + `authorize('CUSTOMER')` → `address.controller` → `address.service` → `address.repository`

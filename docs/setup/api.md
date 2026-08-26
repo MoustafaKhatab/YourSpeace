@@ -837,10 +837,139 @@ Categories are **shared** (not tied to a store/seller). A seller can create a ro
 
 ---
 
+### `GET /api/category/get-categories`
+
+**Public** (no session). Returns a flat list of **visible** categories (`visible = true`), ordered by parent then name.
+
+**Response `200`**
+```json
+{
+  "message": "Categories retrieved successfully",
+  "categories": [
+    {
+      "category_id": "1",
+      "parent_id": null,
+      "name": "Electronics",
+      "visible": true,
+      "metadata": null,
+      "created_at": "...",
+      "updated_at": "..."
+    },
+    {
+      "category_id": "2",
+      "parent_id": "1",
+      "name": "Phones",
+      "visible": true,
+      "metadata": null,
+      "created_at": "...",
+      "updated_at": "..."
+    }
+  ]
+}
+```
+
+---
+
+## Product
+
+Seller create requires `x-session-id` + `authorize('SELLER')`.  
+Public list endpoints have **no** session.
+
+### `POST /api/product/create-product`
+
+Creates a product for the seller’s store (`store_id` from `req.user.seller_id` → store). Optional `category_id`: if sent, category must exist or the request fails with **404** (product is not created). On success, response includes `category_id` when assigned.
+
+**Headers**
+| Key | Value |
+|-----|--------|
+| `x-session-id` | session from login/register (SELLER) |
+| `Content-Type` | `application/json` |
+
+**Body**
+```json
+{
+  "title": "Phone Case",
+  "description": "Clear case",
+  "hidden": false,
+  "category_id": 1
+}
+```
+
+- `title` — required, trimmed, max **255**  
+- `description` — optional  
+- `hidden` — optional boolean (default `false`)  
+- `category_id` — optional; if present must exist  
+
+**Response `201`**
+```json
+{
+  "message": "Product created successfully",
+  "product": {
+    "product_id": "1",
+    "store_id": "2",
+    "title": "Phone Case",
+    "description": "Clear case",
+    "hidden": false,
+    "category_id": "1",
+    "created_at": "...",
+    "updated_at": "..."
+  }
+}
+```
+
+**Errors**
+| Status | When |
+|--------|------|
+| `400` | Invalid fields |
+| `401` | Missing/invalid session |
+| `403` | Not a SELLER |
+| `404` | No seller profile, no store, or category not found |
+
+---
+
+### `GET /api/product/by-store/:store_name`
+
+**Public.** Visible (`hidden = false`) products for a store by name (case-insensitive).
+
+**Example:** `GET /api/product/by-store/My%20Shop`
+
+**Response `200`**
+```json
+{
+  "message": "Products retrieved successfully",
+  "products": [ { "product_id": "1", "store_id": "2", "title": "...", "hidden": false, "...": "..." } ]
+}
+```
+
+**Errors**
+| Status | When |
+|--------|------|
+| `400` | Missing store_name |
+| `404` | Store not found |
+
+---
+
+### `GET /api/product/by-category/:category_id`
+
+**Public.** Visible products assigned to a category. Category must exist and be `visible`.
+
+**Example:** `GET /api/product/by-category/1`
+
+**Response `200`** — same shape as by-store (`products` array).
+
+**Errors**
+| Status | When |
+|--------|------|
+| `400` | Invalid category_id |
+| `404` | Category not found / not visible |
+
+---
+
 ## Not implemented yet
 
 - Changing account email (verification flow)
-- Category list / get / update / delete (SCRUM-37+)
+- Category get-by-id / update / delete
+- Product update / variants / images
 
 ---
 
@@ -861,4 +990,5 @@ Email: `src/utils/mailer.js` + templates in `src/utils/emailTemplates.js`
 | Seller | `seller.routes.js` | `seller.controller.js` | `seller.service.js` | `auth.repository.js` (JOIN via `getUserById`) |
 | Store | `store.routes.js` | `store.controller.js` | `store.service.js` | `store.repository.js` (`req.user.seller_id` from `authorize`) |
 | Category | `category.routes.js` | `category.controller.js` | `category.service.js` | `category.repository.js` (global tree) |
+| Product | `product.routes.js` | `product.controller.js` | `product.service.js` | `product.repository.js` (+ store/category) |
 | Health | `health.routes.js` | `health.controller.js` | `health.service.js` | — |

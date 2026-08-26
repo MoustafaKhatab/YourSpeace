@@ -17,14 +17,14 @@
 | SCRUM-34 | Store Creation | Done |
 | SCRUM-35 | Store Retrieval | Done |
 | SCRUM-36 | Store Update | Done |
-| SCRUM-37 | Category Retrieval | To Do (create API done) |
-| SCRUM-38 | Product Creation | To Do |
-| SCRUM-39 | Product Retrieval | To Do |
+| SCRUM-37 | Category Retrieval | Done (`GET /get-categories`) |
+| SCRUM-38 | Product Creation | Done |
+| SCRUM-39 | Product Retrieval | Done (by store / by category) |
 | SCRUM-40 | Product Update | To Do |
 | SCRUM-41 | Product Variant Creation | To Do |
 | SCRUM-42 | Product Variant Management | To Do |
 | SCRUM-43 | Product Image Management | To Do |
-| SCRUM-44 | Product Category Assignment | To Do |
+| SCRUM-44 | Product Category Assignment | Done (on create via optional `category_id`) |
 
 **Jira Board**
 
@@ -34,14 +34,17 @@
 
 ## Latest completed
 
+- **SCRUM-39 Product retrieval** — public `GET /api/product/by-store/:store_name`, `GET /api/product/by-category/:category_id` (visible products only)
+- **SCRUM-38 / SCRUM-44 Product create + category assign** — `POST /api/product/create-product`; optional `category_id` (404 if missing); `seller_id` → store
+- **SCRUM-37 Category list** — public `GET /api/category/get-categories` (visible categories, flat)
 - **Schema (Sprint 4)** — `categories` (global tree + unique name per parent), `products`, `product_categories`
-- **Category create (global)** — `POST /api/category/create-category`; sellers create shared categories only if name free under same parent; no store ownership
-- **SCRUM-36 Store Update** — `PUT /api/store/update-user-store`; partial fields + validation; name uniqueness; `updated_at`
-- **SCRUM-35 Store Retrieval** — `GET /api/store/get-user-store`; uses `req.user.seller_id` from `authorize('SELLER')`
-- **SCRUM-34 Store Creation** — `POST /api/store/create-store`; `req.user.seller_id` from `authorize('SELLER')` (not from client); name validation; one store per seller
-- **SCRUM-33 Seller Profile** — register as SELLER + `GET /api/seller/me`; `authorize('SELLER')` sets `req.user.seller_id`
-- **Separate reset verify API** — `POST /api/auth/reset-password/verify-code` (email from body / Gmail flow, no session); `POST /verify-code` is session-only for change-password
-- **SCRUM-21 Change password (complete)** — request → verify-code (sets `verified`) → change-password; reset uses `reset-password/verify-code`; HTML templates in `emailTemplates.js`
+- **Category create (global)** — `POST /api/category/create-category`; sellers create shared categories only if name free under same parent
+- **SCRUM-36 Store Update** — `PUT /api/store/update-user-store`
+- **SCRUM-35 Store Retrieval** — `GET /api/store/get-user-store`
+- **SCRUM-34 Store Creation** — `POST /api/store/create-store`
+- **SCRUM-33 Seller Profile** — register as SELLER + `GET /api/seller/me`
+- **Separate reset verify API** — `POST /api/auth/reset-password/verify-code`
+- **SCRUM-21 Change password** — request → verify-code → change-password
 - Sprint 2: customer profile, address CRUD, logout
 - Sprint 1: sessionful auth, session/role middleware
 - Sprint 0: foundation, domain/ERD, backend scaffold, PostgreSQL
@@ -117,15 +120,15 @@
 | SCRUM-34 | Store Creation | Done | `POST /api/store/create-store`; `stores` table; one store per seller |
 | SCRUM-35 | Store Retrieval | Done | `GET /api/store/get-user-store`; by `req.user.seller_id` |
 | SCRUM-36 | Store Update | Done | `PUT /api/store/update-user-store`; partial update + uniqueness |
-| — | Category create (ahead of SCRUM-37) | Done | `POST /api/category/create-category`; global tree; unique name per parent |
-| SCRUM-37 | Category Retrieval | To Do | — |
-| SCRUM-38 | Product Creation | To Do | schema: `products`, `product_categories` ready |
-| SCRUM-39 | Product Retrieval | To Do | — |
+| — | Category create | Done | `POST /api/category/create-category`; global; unique name per parent |
+| SCRUM-37 | Category Retrieval | Done | `GET /api/category/get-categories` (public, visible only) |
+| SCRUM-38 | Product Creation | Done | `POST /api/product/create-product`; optional `category_id` |
+| SCRUM-39 | Product Retrieval | Done | public by-store / by-category |
 | SCRUM-40 | Product Update | To Do | — |
 | SCRUM-41 | Product Variant Creation | To Do | — |
 | SCRUM-42 | Product Variant Management | To Do | — |
 | SCRUM-43 | Product Image Management | To Do | — |
-| SCRUM-44 | Product Category Assignment | To Do | — |
+| SCRUM-44 | Product Category Assignment | Done | assign on create via `product_categories` |
 
 ---
 
