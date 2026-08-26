@@ -48,6 +48,11 @@ const createCategory = async (name, visible = true, metadata = null, parent_id =
     }
 };
 
+const getCategories = async () => {
+    return categoryRepository.getCategories();
+};
+
 module.exports = {
     createCategory,
+    getCategories,
 };

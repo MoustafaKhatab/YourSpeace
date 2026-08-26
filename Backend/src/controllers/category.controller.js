@@ -64,6 +64,17 @@ const createCategory = async (req, res) => {
     }
 };
 
+const getCategories = async (req, res) => {
+    try {
+        const categories = await categoryService.getCategories();
+        return res.status(200).json({ message: 'Categories retrieved successfully', categories });
+    } catch (error) {
+        console.error('Get categories error:', error.message);
+        return res.status(500).json({ message: 'Failed to get categories' });
+    }
+};
+
 module.exports = {
     createCategory,
+    getCategories,
 };

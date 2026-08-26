@@ -32,8 +32,21 @@ const getCategoryByParentAndName = async (parent_id, name) => {
     return result.rows[0];
 };
 
+/** Public list: visible categories (flat). */
+const getCategories = async () => {
+    const query = `
+        SELECT category_id, parent_id, name, visible, metadata, created_at, updated_at
+        FROM categories
+        WHERE visible = TRUE
+        ORDER BY COALESCE(parent_id, 0), name ASC
+    `;
+    const result = await pool.query(query);
+    return result.rows;
+};
+
 module.exports = {
     createCategory,
     getCategoryById,
     getCategoryByParentAndName,
+    getCategories,
 };
