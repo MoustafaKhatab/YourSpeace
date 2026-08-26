@@ -11,6 +11,14 @@
 
 **On hold: Sprint 3 – Shopping Cart Management** (29 Aug – 5 Sep) — paused while Sprint 4 runs.
 
+### Working agreement (26 Aug 2026)
+
+1. **Admin + Seller first** — make both roles solid before deep customer / home / cart / order work.
+2. **Next up:** Admin role + category management from Admin (API list to be shared before coding).
+3. **Then:** Seller catalog completion (product update → variants → images).
+4. **Later:** Customer flows, home-page display detail, cart, orders.
+5. **Deferred:** transactional product+category create (and related hardening) — after Admin/Seller APIs settle.
+
 | Ticket | Item | Status |
 |--------|------|--------|
 | SCRUM-33 | Seller Profile Creation | Done |
@@ -20,6 +28,7 @@
 | SCRUM-37 | Category Retrieval | Done (`GET /get-categories`) |
 | SCRUM-38 | Product Creation | Done |
 | SCRUM-39 | Product Retrieval | Done (feed / by store / by category + subtree) |
+| — | **Admin role + category admin APIs** | **Next (APIs TBD)** |
 | SCRUM-40 | Product Update | To Do |
 | SCRUM-41 | Product Variant Creation | To Do |
 | SCRUM-42 | Product Variant Management | To Do |

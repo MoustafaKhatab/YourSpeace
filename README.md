@@ -13,7 +13,7 @@ The goal of this project is not only to build a production-ready backend, but al
 | Place | Role |
 |-------|------|
 | **[Jira Board](https://codx207.atlassian.net/jira/software/projects/SCRUM/summary?atlOrigin=eyJpIjoiZGRjNTQ2ZTJhOTk2NDkyOWJhNzJiMGNmYzRlMmUzNjQiLCJwIjoiaiJ9)** | Upcoming sprints, backlog, user stories, and board status |
-| **[Progress](docs/progress/Progress.md)** | Living repo log of what has been finished |
+| **[Progress](docs/progress/Progress.md)** | Living repo log, working agreement, sprint board |
 | **`docs/` phase files** | Stable artifacts for completed design/setup phases |
 
 This project follows an **Agile Scrum** workflow. Process details and the epic list are in [Agile.md](docs/process/Agile.md).
@@ -24,7 +24,7 @@ This project follows an **Agile Scrum** workflow. Process details and the epic l
 
 | Document | Status | Description |
 |----------|--------|-------------|
-| [Progress](docs/progress/Progress.md) | Living | Sprint focus and completed work log |
+| [Progress](docs/progress/Progress.md) | Living | Sprint focus, working agreement, completed work log |
 | [Setup](docs/setup/Setup.md) | Current | How to install and run the backend |
 | [Database Setup](docs/setup/db.md) | Current | PostgreSQL, tables, `.env`, `npm run db` |
 | [API Reference](docs/setup/api.md) | Current | Auth, customer, seller, store, category, product (Postman) |
