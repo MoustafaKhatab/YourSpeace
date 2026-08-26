@@ -93,4 +93,8 @@ CREATE TABLE IF NOT EXISTS product_categories (
     PRIMARY KEY (product_id, category_id)
 );
 
+-- One category per product (change via update-product later)
+CREATE UNIQUE INDEX IF NOT EXISTS product_categories_one_per_product
+    ON product_categories (product_id);
+
 

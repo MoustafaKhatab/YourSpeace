@@ -86,6 +86,7 @@ PUT    http://localhost:3000/api/store/update-user-store
 POST   http://localhost:3000/api/category/create-category
 GET    http://localhost:3000/api/category/get-categories
 POST   http://localhost:3000/api/product/create-product
+GET    http://localhost:3000/api/product/get-products
 GET    http://localhost:3000/api/product/by-store/:store_name
 GET    http://localhost:3000/api/product/by-category/:category_id
 POST   http://localhost:3000/api/address/create
@@ -95,7 +96,7 @@ DELETE http://localhost:3000/api/address/delete/:address_id
 ```
 
 Protected with `x-session-id`: change-password flow, me, customer, seller, store, category create, product create, address.  
-Public: `forget-password`, `reset-password/verify-code`, `reset-password`, `GET /category/get-categories`, `GET /product/by-store/:store_name`, `GET /product/by-category/:category_id`.
+Public: `forget-password`, `reset-password/verify-code`, `reset-password`, `GET /category/get-categories`, `GET /product/get-products`, `GET /product/by-store/:store_name`, `GET /product/by-category/:category_id`.
 
 API endpoints are tested with **Postman**. Full request/response shapes: [api.md](api.md).
 
@@ -151,5 +152,5 @@ Examples:
 - `/api/seller/*` → `sessionAuth` + `authorize('SELLER')` → `seller.controller` → `seller.service` → `auth.repository` (user + sellers JOIN)
 - `/api/store/*` → `sessionAuth` + `authorize('SELLER')` (sets `req.user.seller_id`) → `store.controller` → `store.service` → `store.repository`
 - `/api/category/*` → create: `sessionAuth` + `authorize('SELLER')`; list: public → `category.controller` → …
-- `/api/product/*` → create: seller auth; by-store / by-category: public → `product.controller` → `product.service` → `product.repository`
+- `/api/product/*` → create: seller auth (at most one category); get-products / by-store / by-category (public feed + filters; by-category includes visible subtree) → `product.controller` → `product.service` → `product.repository`
 - `/api/address/*` → `sessionAuth` + `authorize('CUSTOMER')` → `address.controller` → `address.service` → `address.repository`

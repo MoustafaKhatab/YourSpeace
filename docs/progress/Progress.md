@@ -19,12 +19,12 @@
 | SCRUM-36 | Store Update | Done |
 | SCRUM-37 | Category Retrieval | Done (`GET /get-categories`) |
 | SCRUM-38 | Product Creation | Done |
-| SCRUM-39 | Product Retrieval | Done (by store / by category) |
+| SCRUM-39 | Product Retrieval | Done (feed / by store / by category + subtree) |
 | SCRUM-40 | Product Update | To Do |
 | SCRUM-41 | Product Variant Creation | To Do |
 | SCRUM-42 | Product Variant Management | To Do |
 | SCRUM-43 | Product Image Management | To Do |
-| SCRUM-44 | Product Category Assignment | Done (on create via optional `category_id`) |
+| SCRUM-44 | Product Category Assignment | Done (one category on create) |
 
 **Jira Board**
 
@@ -34,6 +34,9 @@
 
 ## Latest completed
 
+- **Main-page product feed** — public `GET /api/product/get-products` (newest visible products, optional `limit`/`offset`, includes `store_name` + categories)
+- **By-category includes subtree** — `GET /api/product/by-category/:category_id` uses `WITH RECURSIVE` (parent + visible descendants); product lists join category `id` + `name`
+- **One category per product on create** — assign blocked if already set; unique index on `product_categories.product_id` (change via update later)
 - **SCRUM-39 Product retrieval** — public `GET /api/product/by-store/:store_name`, `GET /api/product/by-category/:category_id` (visible products only)
 - **SCRUM-38 / SCRUM-44 Product create + category assign** — `POST /api/product/create-product`; optional `category_id` (404 if missing); `seller_id` → store
 - **SCRUM-37 Category list** — public `GET /api/category/get-categories` (visible categories, flat)
@@ -123,12 +126,12 @@
 | — | Category create | Done | `POST /api/category/create-category`; global; unique name per parent |
 | SCRUM-37 | Category Retrieval | Done | `GET /api/category/get-categories` (public, visible only) |
 | SCRUM-38 | Product Creation | Done | `POST /api/product/create-product`; optional `category_id` |
-| SCRUM-39 | Product Retrieval | Done | public by-store / by-category |
+| SCRUM-39 | Product Retrieval | Done | public get-products / by-store / by-category (recursive subtree) |
 | SCRUM-40 | Product Update | To Do | — |
 | SCRUM-41 | Product Variant Creation | To Do | — |
 | SCRUM-42 | Product Variant Management | To Do | — |
 | SCRUM-43 | Product Image Management | To Do | — |
-| SCRUM-44 | Product Category Assignment | Done | assign on create via `product_categories` |
+| SCRUM-44 | Product Category Assignment | Done | one category on create; change via update later |
 
 ---
 

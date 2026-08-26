@@ -124,7 +124,7 @@ PGPASSWORD=postgres psql -h localhost -U postgres -d yourspeace -f Backend/Datab
 | `stores` | Store owned by one seller (1 seller → 0..1 store) |
 | `categories` | Global category tree (`parent_id`); unique name per parent; sellers may create if missing |
 | `products` | Products belonging to a store |
-| `product_categories` | M:N link between products and categories |
+| `product_categories` | Product ↔ category link; **one category per product** (unique `product_id`) |
 
 ### `users`
 - `user_id` PK  
@@ -191,7 +191,8 @@ Not owned by a seller/store. Any **SELLER** may create a category/subcategory on
 ### `product_categories`
 - Composite PK: (`product_id`, `category_id`)  
 - `product_id` FK → `products` (ON DELETE CASCADE)  
-- `category_id` FK → `categories` (ON DELETE CASCADE)
+- `category_id` FK → `categories` (ON DELETE CASCADE)  
+- Unique index on `product_id` — **one category per product** for now (change later via update-product)
 
 ---
 
@@ -281,7 +282,8 @@ Backend/
     ├── apply_schema.js     # Used by npm run db
     ├── set_password.sql    # One-time: set postgres password
     ├── migrate_role_enum.sql # One-time: VARCHAR role → user_role enum
-    └── migrate_categories_global.sql # One-time: drop categories.store_id; unique (parent, name)
+    ├── migrate_categories_global.sql # One-time: drop categories.store_id; unique (parent, name)
+    └── migrate_product_one_category.sql # One-time: unique product_id on product_categories
 ```
 
 API usage: [api.md](api.md)

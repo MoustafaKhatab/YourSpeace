@@ -877,7 +877,7 @@ Public list endpoints have **no** session.
 
 ### `POST /api/product/create-product`
 
-Creates a product for the seller’s store (`store_id` from `req.user.seller_id` → store). Optional `category_id`: if sent, category must exist or the request fails with **404** (product is not created). On success, response includes `category_id` when assigned.
+Creates a product for the seller’s store (`store_id` from `req.user.seller_id` → store). Optional `category_id`: if sent, category must exist or the request fails with **404** (product is not created). A product may have **at most one** category; create assigns it once (changing category is update-product later). On success, response includes `category_id` and `category_name` when assigned.
 
 **Headers**
 | Key | Value |
@@ -911,6 +911,7 @@ Creates a product for the seller’s store (`store_id` from `req.user.seller_id`
     "description": "Clear case",
     "hidden": false,
     "category_id": "1",
+    "category_name": "Phones",
     "created_at": "...",
     "updated_at": "..."
   }
@@ -920,16 +921,52 @@ Creates a product for the seller’s store (`store_id` from `req.user.seller_id`
 **Errors**
 | Status | When |
 |--------|------|
-| `400` | Invalid fields |
+| `400` | Invalid fields, or product already has a category |
 | `401` | Missing/invalid session |
 | `403` | Not a SELLER |
 | `404` | No seller profile, no store, or category not found |
 
 ---
 
+### `GET /api/product/get-products`
+
+**Public.** Main-page feed: newest visible (`hidden = false`) products across all stores. Includes `store_name` and `categories: [{ category_id, name }, ...]`.
+
+**Query (optional)**
+| Param | Default | Notes |
+|-------|---------|--------|
+| `limit` | `20` | positive integer, max **100** |
+| `offset` | `0` | non-negative integer |
+
+**Example:** `GET /api/product/get-products?limit=20&offset=0`
+
+**Response `200`**
+```json
+{
+  "message": "Products retrieved successfully",
+  "products": [
+    {
+      "product_id": "1",
+      "store_id": "2",
+      "store_name": "My Shop",
+      "title": "...",
+      "hidden": false,
+      "categories": [{ "category_id": "2", "name": "Phones" }]
+    }
+  ]
+}
+```
+
+**Errors**
+| Status | When |
+|--------|------|
+| `400` | Invalid `limit` or `offset` |
+
+---
+
 ### `GET /api/product/by-store/:store_name`
 
-**Public.** Visible (`hidden = false`) products for a store by name (case-insensitive).
+**Public.** Visible (`hidden = false`) products for a store by name (case-insensitive). Each product includes `categories: [{ category_id, name }, ...]`.
 
 **Example:** `GET /api/product/by-store/My%20Shop`
 
@@ -937,7 +974,15 @@ Creates a product for the seller’s store (`store_id` from `req.user.seller_id`
 ```json
 {
   "message": "Products retrieved successfully",
-  "products": [ { "product_id": "1", "store_id": "2", "title": "...", "hidden": false, "...": "..." } ]
+  "products": [
+    {
+      "product_id": "1",
+      "store_id": "2",
+      "title": "...",
+      "hidden": false,
+      "categories": [{ "category_id": "2", "name": "Phones" }]
+    }
+  ]
 }
 ```
 
@@ -951,7 +996,7 @@ Creates a product for the seller’s store (`store_id` from `req.user.seller_id`
 
 ### `GET /api/product/by-category/:category_id`
 
-**Public.** Visible products assigned to a category. Category must exist and be `visible`.
+**Public.** Visible products assigned to this category **or any visible descendant** (recursive tree via `WITH RECURSIVE`). Category must exist and be `visible`. Same `categories` array shape as by-store.
 
 **Example:** `GET /api/product/by-category/1`
 

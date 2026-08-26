@@ -45,18 +45,25 @@ const createProduct = async (seller_id, title, description, hidden = false, cate
         return product;
     }
 
+    const alreadyAssigned = await productRepository.productHasCategory(product.product_id);
+    if (alreadyAssigned) {
+        const error = new Error('Product already has a category');
+        error.statusCode = 400;
+        throw error;
+    }
+
     try {
         await productRepository.addProductToCategory(product.product_id, category.category_id);
         return {
             ...product,
             category_id: category.category_id,
+            category_name: category.name,
         };
     } catch (error) {
         if (error.code === '23505') {
-            return {
-                ...product,
-                category_id: category.category_id,
-            };
+            const conflict = new Error('Product already has a category');
+            conflict.statusCode = 400;
+            throw conflict;
         }
         if (error.code === '23503') {
             const notFound = new Error('Category not found');
@@ -67,6 +74,14 @@ const createProduct = async (seller_id, title, description, hidden = false, cate
     }
 };
 
+const DEFAULT_FEED_LIMIT = 20;
+const MAX_FEED_LIMIT = 100;
+
+/** Public main-page feed. limit/offset validated in controller. */
+const getProducts = async (limit = DEFAULT_FEED_LIMIT, offset = 0) => {
+    return productRepository.getProducts(limit, offset);
+};
+
 const getProductByStoreName = async (store_name) => {
     const store = await storeRepository.getStoreByName(store_name);
     if (!store) {
@@ -75,8 +90,7 @@ const getProductByStoreName = async (store_name) => {
         throw error;
     }
 
-    const products = await productRepository.getProductByStoreName(store_name);
-    return products;
+    return productRepository.getProductByStoreName(store_name);
 };
 
 const getProductByCategory = async (category_id) => {
@@ -99,6 +113,9 @@ const getProductByCategory = async (category_id) => {
 
 module.exports = {
     createProduct,
+    getProducts,
     getProductByStoreName,
     getProductByCategory,
+    DEFAULT_FEED_LIMIT,
+    MAX_FEED_LIMIT,
 };

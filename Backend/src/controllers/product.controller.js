@@ -72,6 +72,41 @@ const createProduct = async (req, res) => {
     }
 };
 
+const getProducts = async (req, res) => {
+    try {
+        const { limit: limitRaw, offset: offsetRaw } = req.query;
+
+        let limit = productService.DEFAULT_FEED_LIMIT;
+        if (limitRaw !== undefined && limitRaw !== null && limitRaw !== '') {
+            const n = Number(limitRaw);
+            if (!Number.isInteger(n) || n <= 0) {
+                return res.status(400).json({ message: 'limit must be a positive integer' });
+            }
+            if (n > productService.MAX_FEED_LIMIT) {
+                return res.status(400).json({
+                    message: `limit must be at most ${productService.MAX_FEED_LIMIT}`,
+                });
+            }
+            limit = n;
+        }
+
+        let offset = 0;
+        if (offsetRaw !== undefined && offsetRaw !== null && offsetRaw !== '') {
+            const n = Number(offsetRaw);
+            if (!Number.isInteger(n) || n < 0) {
+                return res.status(400).json({ message: 'offset must be a non-negative integer' });
+            }
+            offset = n;
+        }
+
+        const products = await productService.getProducts(limit, offset);
+        return res.status(200).json({ message: 'Products retrieved successfully', products });
+    } catch (error) {
+        console.error('Get products feed error:', error.message);
+        return res.status(500).json({ message: 'Failed to get products' });
+    }
+};
+
 const getProductByStoreName = async (req, res) => {
     try {
         const { store_name } = req.params;
@@ -115,6 +150,7 @@ const getProductByCategory = async (req, res) => {
 
 module.exports = {
     createProduct,
+    getProducts,
     getProductByStoreName,
     getProductByCategory,
 };
