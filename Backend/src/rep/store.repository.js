@@ -20,6 +20,16 @@ const getStoreBySellerId = async (seller_id) => {
     return result.rows[0];
 };
 
+const getStoreById = async (store_id) => {
+    const query = `
+        SELECT store_id, seller_id, name, description, logo_url, created_at, updated_at
+        FROM stores
+        WHERE store_id = $1
+    `;
+    const result = await pool.query(query, [store_id]);
+    return result.rows[0];
+};
+
 const createStore = async (seller_id, name, description) => {
     const query = `
         INSERT INTO stores (seller_id, name, description)
@@ -47,6 +57,7 @@ const updateStore = async (seller_id, name, description, logo_url) => {
 module.exports = {
     getStoreByName,
     getStoreBySellerId,
+    getStoreById,
     createStore,
     updateStore
 };

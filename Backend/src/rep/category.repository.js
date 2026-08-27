@@ -44,9 +44,36 @@ const getCategories = async () => {
     return result.rows;
 };
 
+const updateCategory = async (category_id, parent_id, name, visible, metadata) => {
+    const query = `
+        UPDATE categories
+        SET parent_id = $1,
+            name = $2,
+            visible = $3,
+            metadata = $4,
+            updated_at = NOW()
+        WHERE category_id = $5
+        RETURNING category_id, parent_id, name, visible, metadata, created_at, updated_at
+    `;
+    const result = await pool.query(query, [parent_id, name, visible, metadata, category_id]);
+    return result.rows[0];
+};
+
+const deleteCategory = async (category_id) => {
+    const query = `
+        DELETE FROM categories
+        WHERE category_id = $1
+        RETURNING category_id, parent_id, name, visible, metadata, created_at, updated_at
+    `;
+    const result = await pool.query(query, [category_id]);
+    return result.rows[0];
+};
+
 module.exports = {
     createCategory,
     getCategoryById,
     getCategoryByParentAndName,
     getCategories,
+    updateCategory,
+    deleteCategory,
 };

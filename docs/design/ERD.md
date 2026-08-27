@@ -242,7 +242,7 @@ erDiagram
 | **PRODUCT** | Product listing belonging to one store |
 | **PRODUCT_IMAGE** | Images for a product |
 | **PRODUCT_VARIANT** | Sellable SKU unit (color, size, stock) |
-| **CATEGORY** | Shared hierarchical tree (`parent_id`); unique name per parent; no admin/seller ownership column — sellers may create if missing |
+| **CATEGORY** | Shared hierarchical tree (`parent_id`); unique name per parent; **ADMIN** manages; public list is visible-only |
 | **PRODUCT_CATEGORY** | Many-to-many link between products and categories |
 
 ### Cart & checkout

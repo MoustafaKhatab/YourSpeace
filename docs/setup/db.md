@@ -121,8 +121,9 @@ PGPASSWORD=postgres psql -h localhost -U postgres -d yourspeace -f Backend/Datab
 | `sessions` | Sessionful auth tokens (`session_id`, `expires_at`) |
 | `password_reset_codes` | Email codes (`code_verifier`, `verified`, `used`, `expires_at`) — verify via `reset-password/verify-code` (forget) or `verify-code` (change) before apply |
 | `sellers` | Optional seller profile (1 user → 0..1 seller) |
+| `admins` | Optional admin profile (1 user → 0..1 admin) |
 | `stores` | Store owned by one seller (1 seller → 0..1 store) |
-| `categories` | Global category tree (`parent_id`); unique name per parent; sellers may create if missing |
+| `categories` | Global category tree (`parent_id`); unique name per parent; **ADMIN** manages |
 | `products` | Products belonging to a store |
 | `product_categories` | Product ↔ category link; **one category per product** (unique `product_id`) |
 
@@ -162,6 +163,12 @@ Expiry checks run only in the verify endpoints; apply-password steps require `ve
 - `user_id` FK → `users` (ON DELETE CASCADE, **UNIQUE** — one seller profile per user)  
 - `created_at`, `updated_at`
 
+### `admins`
+- `admin_id` PK  
+- `user_id` FK → `users` (ON DELETE CASCADE, **UNIQUE** — one admin profile per user)  
+- `created_at`, `updated_at`  
+- Created via `POST /api/admin/create-admin` (not public `/auth/register`)
+
 ### `stores`
 - `store_id` PK  
 - `seller_id` FK → `sellers` (ON DELETE CASCADE, **UNIQUE** — one store per seller)  
@@ -178,7 +185,7 @@ Expiry checks run only in the verify endpoints; apply-password steps require `ve
 - `metadata` (JSONB, optional)  
 - `created_at`, `updated_at`  
 
-Not owned by a seller/store. Any **SELLER** may create a category/subcategory only if that name does not already exist under the same parent.
+Not owned by a seller/store. **ADMIN** creates/updates/deletes; public list returns visible only. Unique name under the same parent.
 
 ### `products`
 - `product_id` PK  
@@ -283,7 +290,8 @@ Backend/
     ├── set_password.sql    # One-time: set postgres password
     ├── migrate_role_enum.sql # One-time: VARCHAR role → user_role enum
     ├── migrate_categories_global.sql # One-time: drop categories.store_id; unique (parent, name)
-    └── migrate_product_one_category.sql # One-time: unique product_id on product_categories
+    ├── migrate_product_one_category.sql # One-time: unique product_id on product_categories
+    └── migrate_admins.sql # One-time: create admins table
 ```
 
 API usage: [api.md](api.md)

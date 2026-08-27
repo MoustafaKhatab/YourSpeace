@@ -3,72 +3,188 @@ const productService = require('../services/product.service');
 const MAX_TITLE_LENGTH = 255;
 const MAX_DESCRIPTION_LENGTH = 5000;
 
+const parsePositiveInt = (value, fieldName) => {
+    const n = Number(value);
+    if (!Number.isInteger(n) || n <= 0) {
+        const error = new Error(`${fieldName} must be a positive integer`);
+        error.statusCode = 400;
+        throw error;
+    }
+    return n;
+};
+
+const parseCreateOrUpdateBody = (body, { partial = false } = {}) => {
+    const fields = {};
+    const errors = [];
+
+    if (!partial || (body && Object.prototype.hasOwnProperty.call(body, 'title'))) {
+        if (body?.title === undefined || body?.title === null || String(body.title).trim() === '') {
+            if (!partial) {
+                errors.push('title is required');
+            }
+        } else {
+            const trimmedTitle = String(body.title).trim();
+            if (trimmedTitle.length > MAX_TITLE_LENGTH) {
+                errors.push(`title must be at most ${MAX_TITLE_LENGTH} characters`);
+            } else {
+                fields.title = trimmedTitle;
+            }
+        }
+    }
+
+    if (body && Object.prototype.hasOwnProperty.call(body, 'description')) {
+        if (body.description === null || String(body.description).trim() === '') {
+            fields.description = null;
+        } else {
+            const trimmedDescription = String(body.description).trim();
+            if (trimmedDescription.length > MAX_DESCRIPTION_LENGTH) {
+                errors.push(`description must be at most ${MAX_DESCRIPTION_LENGTH} characters`);
+            } else {
+                fields.description = trimmedDescription;
+            }
+        }
+    } else if (!partial) {
+        fields.description = null;
+    }
+
+    if (body && Object.prototype.hasOwnProperty.call(body, 'hidden')) {
+        if (typeof body.hidden !== 'boolean') {
+            errors.push('hidden must be a boolean');
+        } else {
+            fields.hidden = body.hidden;
+        }
+    } else if (!partial) {
+        fields.hidden = false;
+    }
+
+    if (body && Object.prototype.hasOwnProperty.call(body, 'category_id')) {
+        if (body.category_id === null || body.category_id === '') {
+            fields.category_id = null;
+        } else {
+            const n = Number(body.category_id);
+            if (!Number.isInteger(n) || n <= 0) {
+                errors.push('category_id must be a positive integer or null');
+            } else {
+                fields.category_id = n;
+            }
+        }
+    }
+
+    if (body && Object.prototype.hasOwnProperty.call(body, 'store_id')) {
+        const n = Number(body.store_id);
+        if (!Number.isInteger(n) || n <= 0) {
+            errors.push('store_id must be a positive integer');
+        } else {
+            fields.store_id = n;
+        }
+    }
+
+    return { fields, errors };
+};
+
 const createProduct = async (req, res) => {
     try {
         const user = req.user;
         if (!user) {
             return res.status(401).json({ message: 'Unauthorized' });
         }
-        if (!user.seller_id) {
-            return res.status(404).json({ message: 'Seller profile not found' });
-        }
 
-        const { title, description, hidden, category_id } = req.body || {};
-
-        if (title === undefined || title === null || String(title).trim() === '') {
-            return res.status(400).json({ message: 'title is required' });
-        }
-
-        const trimmedTitle = String(title).trim();
-        if (trimmedTitle.length > MAX_TITLE_LENGTH) {
-            return res.status(400).json({
-                message: `title must be at most ${MAX_TITLE_LENGTH} characters`,
-            });
-        }
-
-        let trimmedDescription = null;
-        if (description !== undefined && description !== null && String(description).trim() !== '') {
-            trimmedDescription = String(description).trim();
-            if (trimmedDescription.length > MAX_DESCRIPTION_LENGTH) {
-                return res.status(400).json({
-                    message: `description must be at most ${MAX_DESCRIPTION_LENGTH} characters`,
-                });
-            }
-        }
-
-        let parsedHidden = false;
-        if (hidden !== undefined) {
-            if (typeof hidden !== 'boolean') {
-                return res.status(400).json({ message: 'hidden must be a boolean' });
-            }
-            parsedHidden = hidden;
-        }
-
-        let parsedCategoryId = null;
-        if (category_id !== undefined && category_id !== null && category_id !== '') {
-            const n = Number(category_id);
-            if (!Number.isInteger(n) || n <= 0) {
-                return res.status(400).json({ message: 'category_id must be a positive integer' });
-            }
-            parsedCategoryId = n;
+        const { fields, errors } = parseCreateOrUpdateBody(req.body || {}, { partial: false });
+        if (errors.length) {
+            return res.status(400).json({ message: errors[0] });
         }
 
         const product = await productService.createProduct(
-            user.seller_id,
-            trimmedTitle,
-            trimmedDescription,
-            parsedHidden,
-            parsedCategoryId
+            { role: user.role, seller_id: user.seller_id, admin_id: user.admin_id },
+            fields
         );
 
         return res.status(201).json({ message: 'Product created successfully', product });
     } catch (error) {
-        if (error.statusCode === 400 || error.statusCode === 404 || error.statusCode === 409) {
+        if (
+            error.statusCode === 400 ||
+            error.statusCode === 403 ||
+            error.statusCode === 404 ||
+            error.statusCode === 409
+        ) {
             return res.status(error.statusCode).json({ message: error.message });
         }
 
         console.error('Create product error:', error.message);
         return res.status(500).json({ message: 'Failed to create product' });
+    }
+};
+
+const updateProduct = async (req, res) => {
+    try {
+        const user = req.user;
+        if (!user) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
+
+        let productId;
+        try {
+            productId = parsePositiveInt(req.params.product_id, 'product_id');
+        } catch (error) {
+            return res.status(400).json({ message: error.message });
+        }
+
+        const body = req.body || {};
+        if (Object.keys(body).length === 0) {
+            return res.status(400).json({ message: 'At least one field is required' });
+        }
+
+        const { fields, errors } = parseCreateOrUpdateBody(body, { partial: true });
+        if (errors.length) {
+            return res.status(400).json({ message: errors[0] });
+        }
+        if (Object.keys(fields).length === 0) {
+            return res.status(400).json({ message: 'No valid fields to update' });
+        }
+
+        // store_id is create-only for ADMIN
+        delete fields.store_id;
+
+        const product = await productService.updateProduct(
+            { role: user.role, seller_id: user.seller_id, admin_id: user.admin_id },
+            productId,
+            fields
+        );
+
+        return res.status(200).json({ message: 'Product updated successfully', product });
+    } catch (error) {
+        if (
+            error.statusCode === 400 ||
+            error.statusCode === 403 ||
+            error.statusCode === 404 ||
+            error.statusCode === 409
+        ) {
+            return res.status(error.statusCode).json({ message: error.message });
+        }
+
+        console.error('Update product error:', error.message);
+        return res.status(500).json({ message: 'Failed to update product' });
+    }
+};
+
+const getProductById = async (req, res) => {
+    try {
+        let productId;
+        try {
+            productId = parsePositiveInt(req.params.product_id, 'product_id');
+        } catch (error) {
+            return res.status(400).json({ message: error.message });
+        }
+
+        const product = await productService.getProductById(productId);
+        return res.status(200).json({ message: 'Product retrieved successfully', product });
+    } catch (error) {
+        if (error.statusCode === 400 || error.statusCode === 404) {
+            return res.status(error.statusCode).json({ message: error.message });
+        }
+
+        console.error('Get product by id error:', error.message);
+        return res.status(500).json({ message: 'Failed to get product' });
     }
 };
 
@@ -150,6 +266,8 @@ const getProductByCategory = async (req, res) => {
 
 module.exports = {
     createProduct,
+    updateProduct,
+    getProductById,
     getProducts,
     getProductByStoreName,
     getProductByCategory,

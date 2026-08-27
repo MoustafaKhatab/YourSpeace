@@ -52,6 +52,53 @@ const createSeller = async (email, hashedPassword, first_name, last_name, phone_
     }
 };
 
+const createAdmin = async (email, hashedPassword, first_name, last_name, phone_number) => {
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        const result = await client.query(
+            `
+            INSERT INTO users (email, hashed_password, first_name, last_name, phone_number, role)
+            VALUES ($1, $2, $3, $4, $5, 'ADMIN')
+            RETURNING user_id, email, first_name, last_name, phone_number, role
+            `,
+            [email, hashedPassword, first_name, last_name, phone_number]
+        );
+        const user = result.rows[0];
+        if (!user) {
+            const error = new Error('User not created');
+            error.statusCode = 400;
+            throw error;
+        }
+        const adminResult = await client.query(
+            `
+            INSERT INTO admins (user_id)
+            VALUES ($1)
+            RETURNING admin_id, user_id, created_at, updated_at
+            `,
+            [user.user_id]
+        );
+        const admin = adminResult.rows[0];
+        if (!admin) {
+            const error = new Error('Admin not created');
+            error.statusCode = 400;
+            throw error;
+        }
+        await client.query('COMMIT');
+        return { user, admin };
+    } catch (error) {
+        await client.query('ROLLBACK');
+        throw error;
+    } finally {
+        client.release();
+    }
+};
+
+const countAdmins = async () => {
+    const result = await pool.query('SELECT COUNT(*)::int AS count FROM admins');
+    return result.rows[0].count;
+};
+
 const getUserByEmail = async (email) => {
     const query = `
         SELECT user_id, email, hashed_password, first_name, last_name, phone_number, role
@@ -80,6 +127,27 @@ const getUserById = async (user_id, role = null) => {
             INNER JOIN sellers s ON s.user_id = u.user_id
             WHERE u.user_id = $1
               AND u.role = 'SELLER'
+        `;
+        const result = await pool.query(query, [user_id]);
+        return result.rows[0];
+    }
+
+    if (role === 'ADMIN') {
+        const query = `
+            SELECT
+                u.user_id,
+                u.email,
+                u.first_name,
+                u.last_name,
+                u.phone_number,
+                u.role,
+                a.admin_id,
+                a.created_at AS admin_created_at,
+                a.updated_at AS admin_updated_at
+            FROM users u
+            INNER JOIN admins a ON a.user_id = u.user_id
+            WHERE u.user_id = $1
+              AND u.role = 'ADMIN'
         `;
         const result = await pool.query(query, [user_id]);
         return result.rows[0];
@@ -294,7 +362,9 @@ const deleteSessionBySessionId = async (session_id) => {
 
 module.exports = {
     createSeller,
+    createAdmin,
     createCustomer,
+    countAdmins,
     getUserByEmail,
     getUserById,
     getUserBySessionId,

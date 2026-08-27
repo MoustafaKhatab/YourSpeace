@@ -3,12 +3,38 @@ const storeRepository = require('../rep/store.repository');
 const categoryRepository = require('../rep/category.repository');
 const { getUserStoreBySellerId } = require('./store.service');
 
-const createProduct = async (seller_id, title, description, hidden = false, category_id = null) => {
-    const store = await getUserStoreBySellerId(seller_id);
+/**
+ * Create product for a store. category_id comes from client (from public get-categories).
+ * Product + product_categories insert run in one DB transaction.
+ *
+ * @param {{ role: string, seller_id?: string|number }} actor
+ * @param {{ title, description, hidden, category_id, store_id? }} data
+ *   store_id required when actor is ADMIN
+ */
+const createProduct = async (actor, data) => {
+    let store;
+    if (actor.role === 'SELLER') {
+        store = await getUserStoreBySellerId(actor.seller_id);
+    } else if (actor.role === 'ADMIN') {
+        if (data.store_id === null || data.store_id === undefined) {
+            const error = new Error('store_id is required when creating a product as ADMIN');
+            error.statusCode = 400;
+            throw error;
+        }
+        store = await storeRepository.getStoreById(data.store_id);
+        if (!store) {
+            const error = new Error('Store not found');
+            error.statusCode = 404;
+            throw error;
+        }
+    } else {
+        const error = new Error('Forbidden');
+        error.statusCode = 403;
+        throw error;
+    }
 
-    let category = null;
-    if (category_id !== null && category_id !== undefined) {
-        category = await categoryRepository.getCategoryById(category_id);
+    if (data.category_id !== null && data.category_id !== undefined) {
+        const category = await categoryRepository.getCategoryById(data.category_id);
         if (!category) {
             const error = new Error('Category not found');
             error.statusCode = 404;
@@ -16,68 +42,112 @@ const createProduct = async (seller_id, title, description, hidden = false, cate
         }
     }
 
-    let product;
     try {
-        product = await productRepository.createProduct(
+        return await productRepository.createProductWithCategory(
             store.store_id,
-            title,
-            description,
-            hidden
+            data.title,
+            data.description,
+            data.hidden ?? false,
+            data.category_id ?? null
         );
-        if (!product) {
-            const error = new Error('Failed to create product');
-            error.statusCode = 400;
-            throw error;
-        }
     } catch (error) {
         if (error.statusCode) {
             throw error;
         }
         if (error.code === '23503') {
-            const notFound = new Error('Store not found');
+            const notFound = new Error('Store or category not found');
             notFound.statusCode = 404;
             throw notFound;
         }
-        throw error;
-    }
-
-    if (!category) {
-        return product;
-    }
-
-    const alreadyAssigned = await productRepository.productHasCategory(product.product_id);
-    if (alreadyAssigned) {
-        const error = new Error('Product already has a category');
-        error.statusCode = 400;
-        throw error;
-    }
-
-    try {
-        await productRepository.addProductToCategory(product.product_id, category.category_id);
-        return {
-            ...product,
-            category_id: category.category_id,
-            category_name: category.name,
-        };
-    } catch (error) {
         if (error.code === '23505') {
             const conflict = new Error('Product already has a category');
             conflict.statusCode = 400;
             throw conflict;
+        }
+        throw error;
+    }
+};
+
+/**
+ * Update product by id. Seller: only own store. Admin: any store.
+ * category_id: omit = no change; null = clear; number = set/replace (transactional).
+ */
+const updateProduct = async (actor, product_id, fields) => {
+    const existing = await productRepository.getProductById(product_id);
+    if (!existing) {
+        const error = new Error('Product not found');
+        error.statusCode = 404;
+        throw error;
+    }
+
+    if (actor.role === 'SELLER') {
+        const store = await getUserStoreBySellerId(actor.seller_id);
+        if (String(existing.store_id) !== String(store.store_id)) {
+            const error = new Error('Forbidden: product does not belong to your store');
+            error.statusCode = 403;
+            throw error;
+        }
+    } else if (actor.role !== 'ADMIN') {
+        const error = new Error('Forbidden');
+        error.statusCode = 403;
+        throw error;
+    }
+
+    const categoryChange = Object.prototype.hasOwnProperty.call(fields, 'category_id')
+        ? fields.category_id
+        : undefined;
+
+    if (categoryChange !== undefined && categoryChange !== null) {
+        const category = await categoryRepository.getCategoryById(categoryChange);
+        if (!category) {
+            const error = new Error('Category not found');
+            error.statusCode = 404;
+            throw error;
+        }
+    }
+
+    try {
+        return await productRepository.updateProductWithCategory(
+            product_id,
+            {
+                title: fields.title,
+                description: fields.description,
+                hidden: fields.hidden,
+            },
+            categoryChange
+        );
+    } catch (error) {
+        if (error.statusCode) {
+            throw error;
         }
         if (error.code === '23503') {
             const notFound = new Error('Category not found');
             notFound.statusCode = 404;
             throw notFound;
         }
+        if (error.code === '23505') {
+            const conflict = new Error('Product already has a category');
+            conflict.statusCode = 400;
+            throw conflict;
+        }
         throw error;
     }
+};
+
+/** Public get by id — hidden products look like not found. */
+const getProductById = async (product_id) => {
+    const product = await productRepository.getProductById(product_id);
+    if (!product || product.hidden) {
+        const error = new Error('Product not found');
+        error.statusCode = 404;
+        throw error;
+    }
+    return product;
 };
 
 const DEFAULT_FEED_LIMIT = 20;
 const MAX_FEED_LIMIT = 100;
 
-/** Public main-page feed. limit/offset validated in controller. */
 const getProducts = async (limit = DEFAULT_FEED_LIMIT, offset = 0) => {
     return productRepository.getProducts(limit, offset);
 };
@@ -107,12 +177,13 @@ const getProductByCategory = async (category_id) => {
         throw error;
     }
 
-    const products = await productRepository.getProductByCategory(category_id);
-    return products;
+    return productRepository.getProductByCategory(category_id);
 };
 
 module.exports = {
     createProduct,
+    updateProduct,
+    getProductById,
     getProducts,
     getProductByStoreName,
     getProductByCategory,

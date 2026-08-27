@@ -14,10 +14,9 @@
 ### Working agreement (26 Aug 2026)
 
 1. **Admin + Seller first** — make both roles solid before deep customer / home / cart / order work.
-2. **Next up:** Admin role + category management from Admin (API list to be shared before coding).
-3. **Then:** Seller catalog completion (product update → variants → images).
+2. **Admin:** account + category management owned by ADMIN — Done.
+3. **Seller catalog:** product create/update (txn category) — Done; next variants → images.
 4. **Later:** Customer flows, home-page display detail, cart, orders.
-5. **Deferred:** transactional product+category create (and related hardening) — after Admin/Seller APIs settle.
 
 | Ticket | Item | Status |
 |--------|------|--------|
@@ -25,15 +24,15 @@
 | SCRUM-34 | Store Creation | Done |
 | SCRUM-35 | Store Retrieval | Done |
 | SCRUM-36 | Store Update | Done |
-| SCRUM-37 | Category Retrieval | Done (`GET /get-categories`) |
-| SCRUM-38 | Product Creation | Done |
-| SCRUM-39 | Product Retrieval | Done (feed / by store / by category + subtree) |
-| — | **Admin role + category admin APIs** | **Next (APIs TBD)** |
-| SCRUM-40 | Product Update | To Do |
+| SCRUM-37 | Category Retrieval | Done (`GET /get-categories` public) |
+| — | **Admin account + category admin APIs** | **Done** |
+| SCRUM-38 | Product Creation | Done (SELLER\|ADMIN; txn + category_id from client) |
+| SCRUM-39 | Product Retrieval | Done (feed / by-id / by-store / by-category) |
+| SCRUM-40 | Product Update | Done (SELLER own store \| ADMIN any; category change txn) |
 | SCRUM-41 | Product Variant Creation | To Do |
 | SCRUM-42 | Product Variant Management | To Do |
 | SCRUM-43 | Product Image Management | To Do |
-| SCRUM-44 | Product Category Assignment | Done (one category on create) |
+| SCRUM-44 | Product Category Assignment | Done (on create/update via `product_categories` txn) |
 
 **Jira Board**
 
@@ -43,14 +42,15 @@
 
 ## Latest completed
 
+- **Product create/update (SELLER|ADMIN)** — transactional `products` + `product_categories`; `category_id` from client; public `get-product/:id` + by-store; SCRUM-40 done
+- **Admin role** — `admins` table; `POST /api/admin/create-admin` (bootstrap first / ADMIN later); `GET|PUT /api/admin/me`; `authorize('ADMIN')` sets `admin_id`
+- **Category management → ADMIN** — create / get-by-id / update / delete require ADMIN; public `GET /get-categories` unchanged
 - **Main-page product feed** — public `GET /api/product/get-products` (newest visible products, optional `limit`/`offset`, includes `store_name` + categories)
 - **By-category includes subtree** — `GET /api/product/by-category/:category_id` uses `WITH RECURSIVE` (parent + visible descendants); product lists join category `id` + `name`
-- **One category per product on create** — assign blocked if already set; unique index on `product_categories.product_id` (change via update later)
-- **SCRUM-39 Product retrieval** — public `GET /api/product/by-store/:store_name`, `GET /api/product/by-category/:category_id` (visible products only)
-- **SCRUM-38 / SCRUM-44 Product create + category assign** — `POST /api/product/create-product`; optional `category_id` (404 if missing); `seller_id` → store
-- **SCRUM-37 Category list** — public `GET /api/category/get-categories` (visible categories, flat)
-- **Schema (Sprint 4)** — `categories` (global tree + unique name per parent), `products`, `product_categories`
-- **Category create (global)** — `POST /api/category/create-category`; sellers create shared categories only if name free under same parent
+- **One category per product** — unique index on `product_categories.product_id`; set/clear on create or update (transactional)
+- **SCRUM-39 Product retrieval** — public get-product / get-products / by-store / by-category
+- **Schema (Sprint 4)** — `admins`, `categories` (global tree), `products`, `product_categories`
+- **Category management** — ADMIN CRUD; public visible list only
 - **SCRUM-36 Store Update** — `PUT /api/store/update-user-store`
 - **SCRUM-35 Store Retrieval** — `GET /api/store/get-user-store`
 - **SCRUM-34 Store Creation** — `POST /api/store/create-store`
@@ -132,15 +132,15 @@
 | SCRUM-34 | Store Creation | Done | `POST /api/store/create-store`; `stores` table; one store per seller |
 | SCRUM-35 | Store Retrieval | Done | `GET /api/store/get-user-store`; by `req.user.seller_id` |
 | SCRUM-36 | Store Update | Done | `PUT /api/store/update-user-store`; partial update + uniqueness |
-| — | Category create | Done | `POST /api/category/create-category`; global; unique name per parent |
-| SCRUM-37 | Category Retrieval | Done | `GET /api/category/get-categories` (public, visible only) |
-| SCRUM-38 | Product Creation | Done | `POST /api/product/create-product`; optional `category_id` |
-| SCRUM-39 | Product Retrieval | Done | public get-products / by-store / by-category (recursive subtree) |
-| SCRUM-40 | Product Update | To Do | — |
+| — | Category create | Done | `POST /api/category/create-category`; **ADMIN** only; unique name per parent |
+| SCRUM-37 | Category Retrieval | Done | `GET /api/category/get-categories` (public, visible only); admin get/update/delete |
+| SCRUM-38 | Product Creation | Done | SELLER\|ADMIN; txn `products` + `product_categories` |
+| SCRUM-39 | Product Retrieval | Done | public get-product / get-products / by-store / by-category |
+| SCRUM-40 | Product Update | Done | SELLER own store \| ADMIN any; category change txn |
 | SCRUM-41 | Product Variant Creation | To Do | — |
 | SCRUM-42 | Product Variant Management | To Do | — |
 | SCRUM-43 | Product Image Management | To Do | — |
-| SCRUM-44 | Product Category Assignment | Done | one category on create; change via update later |
+| SCRUM-44 | Product Category Assignment | Done | create/update via `product_categories` txn |
 
 ---
 

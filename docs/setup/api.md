@@ -774,17 +774,108 @@ Partial update of the authenticated seller’s store. Only fields present in the
 
 ---
 
+---
+
+## Admin
+
+`ADMIN` cannot self-register via `/auth/register`. Use `/api/admin/create-admin`.
+
+- **First admin (bootstrap):** no session required when `admins` is empty.  
+- **Later admins:** `x-session-id` + `authorize('ADMIN')` (sets `req.user.admin_id`).  
+Creates `users` row (`role = ADMIN`) + `admins` row in one transaction; returns a session (same idea as register).
+
+### `POST /api/admin/create-admin`
+
+**Headers** (required after the first admin exists)
+| Key | Value |
+|-----|--------|
+| `x-session-id` | session of an existing ADMIN |
+| `Content-Type` | `application/json` |
+
+**Body**
+```json
+{
+  "email": "admin@example.com",
+  "password": "secret123",
+  "first_name": "Ada",
+  "last_name": "Admin",
+  "phone_number": "01000000000"
+}
+```
+
+- `email`, `password`, `first_name`, `last_name` — required  
+- `password` — min **8** characters  
+- `phone_number` — optional  
+
+**Response `201`**
+```json
+{
+  "message": "First admin created successfully",
+  "user": { "user_id": "1", "email": "admin@example.com", "role": "ADMIN", "...": "..." },
+  "admin": { "admin_id": "1", "user_id": "1", "created_at": "...", "updated_at": "..." },
+  "session": { "session_id": "uuid-here", "expires_at": "..." }
+}
+```
+
+**Errors**
+| Status | When |
+|--------|------|
+| `400` | Missing fields / short password |
+| `401` | Not bootstrap and missing/invalid session |
+| `403` | Not bootstrap and not ADMIN |
+| `409` | Email already registered |
+
+---
+
+### `GET /api/admin/me`
+
+Requires `sessionAuth` + `authorize('ADMIN')`.
+
+**Response `200`**
+```json
+{
+  "message": "Admin profile fetched successfully",
+  "user": { "user_id": "1", "email": "...", "role": "ADMIN", "...": "..." },
+  "admin": { "admin_id": "1", "created_at": "...", "updated_at": "..." }
+}
+```
+
+---
+
+### `PUT /api/admin/me`
+
+Requires `sessionAuth` + `authorize('ADMIN')`. Updates name/phone (not email).
+
+**Body**
+```json
+{
+  "first_name": "Ada",
+  "last_name": "Admin",
+  "phone_number": "01000000000"
+}
+```
+
+**Errors**
+| Status | When |
+|--------|------|
+| `400` | Missing fields, or email in body |
+| `401` / `403` | Auth |
+| `404` | Admin profile not found |
+
+---
+
 ## Category (global tree)
 
-Requires `x-session-id` + `sessionAuth` + `authorize('SELLER')`.  
-Categories are **shared** (not tied to a store/seller). A seller can create a root or subcategory only if that **name does not already exist under the same parent** (case-insensitive).
+**Management** (create / get-by-id / update / delete): `sessionAuth` + `authorize('ADMIN')`.  
+**Public list:** `GET /get-categories` (visible only).  
+Categories are shared (not store-owned). Unique name per parent (case-insensitive).
 
 ### `POST /api/category/create-category`
 
 **Headers**
 | Key | Value |
 |-----|--------|
-| `x-session-id` | session from login/register (SELLER) |
+| `x-session-id` | session from admin create/login (ADMIN) |
 | `Content-Type` | `application/json` |
 
 **Body (root category)**
@@ -810,30 +901,40 @@ Categories are **shared** (not tied to a store/seller). A seller can create a ro
 - `metadata` — optional object  
 - `parent_id` — optional; omit/`null` = root  
 
-**Response `201`**
-```json
-{
-  "message": "Category created successfully",
-  "category": {
-    "category_id": "1",
-    "parent_id": null,
-    "name": "Electronics",
-    "visible": true,
-    "metadata": { "icon": "devices" },
-    "created_at": "...",
-    "updated_at": "..."
-  }
-}
-```
+**Response `201`** — `{ message, category }`
 
 **Errors**
 | Status | When |
 |--------|------|
 | `400` | Invalid name / visible / metadata / parent_id |
 | `401` | Missing/invalid session |
-| `403` | Not a SELLER |
+| `403` | Not an ADMIN |
 | `404` | Parent category not found |
 | `409` | Name already exists under that parent (or at root) |
+
+---
+
+### `GET /api/category/get-category/:category_id`
+
+**ADMIN.** Returns one category (visible or not).
+
+**Errors:** `400` invalid id · `401`/`403` auth · `404` not found
+
+---
+
+### `PUT /api/category/update-category/:category_id`
+
+**ADMIN.** Partial update: any of `name`, `visible`, `metadata`, `parent_id` (null = root).
+
+**Errors:** same family as create (`400`/`401`/`403`/`404`/`409`)
+
+---
+
+### `DELETE /api/category/delete-category/:category_id`
+
+**ADMIN.** Deletes the category. Children get `parent_id = NULL` (schema ON DELETE SET NULL). Product links cascade-delete from `product_categories`.
+
+**Errors:** `400` · `401`/`403` · `404`
 
 ---
 
@@ -868,24 +969,29 @@ Categories are **shared** (not tied to a store/seller). A seller can create a ro
 }
 ```
 
+
 ---
 
 ## Product
 
-Seller create requires `x-session-id` + `authorize('SELLER')`.  
-Public list endpoints have **no** session.
+**Write** (`create` / `update`): `sessionAuth` + `authorizeAny('SELLER', 'ADMIN')`.  
+**Read** (feed / by-store / by-category / by-id): **public** — no session.  
+Sellers do **not** manage categories; they send a `category_id` from the client (from `GET /category/get-categories`).  
+Create/update with a category uses a **DB transaction** (`products` + `product_categories`). One category per product.
 
 ### `POST /api/product/create-product`
 
-Creates a product for the seller’s store (`store_id` from `req.user.seller_id` → store). Optional `category_id`: if sent, category must exist or the request fails with **404** (product is not created). A product may have **at most one** category; create assigns it once (changing category is update-product later). On success, response includes `category_id` and `category_name` when assigned.
+- **SELLER** — product goes to the seller’s store (`seller_id` → store). Do **not** send `store_id`.  
+- **ADMIN** — must send `store_id` of the target store.  
+Optional `category_id`: must exist or **404**; nothing is partially committed (transaction).
 
 **Headers**
 | Key | Value |
 |-----|--------|
-| `x-session-id` | session from login/register (SELLER) |
+| `x-session-id` | SELLER or ADMIN session |
 | `Content-Type` | `application/json` |
 
-**Body**
+**Body (seller)**
 ```json
 {
   "title": "Phone Case",
@@ -895,36 +1001,52 @@ Creates a product for the seller’s store (`store_id` from `req.user.seller_id`
 }
 ```
 
+**Body (admin)** — same fields plus required `store_id`.
+
 - `title` — required, trimmed, max **255**  
 - `description` — optional  
 - `hidden` — optional boolean (default `false`)  
-- `category_id` — optional; if present must exist  
+- `category_id` — optional; client-chosen id from category list  
+- `store_id` — required for ADMIN only  
 
-**Response `201`**
+**Response `201`** — includes `product_id` (use this for later get/update), `categories[]`, and when assigned `category_id` / `category_name`.
+
+**Errors**
+| Status | When |
+|--------|------|
+| `400` | Invalid fields; ADMIN missing `store_id` |
+| `401` | Missing/invalid session |
+| `403` | Not SELLER or ADMIN |
+| `404` | No seller store, store not found, or category not found |
+
+---
+
+### `PUT /api/product/update-product/:product_id`
+
+**SELLER** — only products in their store. **ADMIN** — any product.  
+Partial body. `category_id`: omit = unchanged; `null` = clear; number = set/replace (transactional).
+
+**Example body**
 ```json
 {
-  "message": "Product created successfully",
-  "product": {
-    "product_id": "1",
-    "store_id": "2",
-    "title": "Phone Case",
-    "description": "Clear case",
-    "hidden": false,
-    "category_id": "1",
-    "category_name": "Phones",
-    "created_at": "...",
-    "updated_at": "..."
-  }
+  "title": "Phone Case XL",
+  "hidden": false,
+  "category_id": 2
 }
 ```
 
 **Errors**
 | Status | When |
 |--------|------|
-| `400` | Invalid fields, or product already has a category |
-| `401` | Missing/invalid session |
-| `403` | Not a SELLER |
-| `404` | No seller profile, no store, or category not found |
+| `400` | Invalid fields / empty body |
+| `401` / `403` | Auth or not owner (seller) |
+| `404` | Product or category not found |
+
+---
+
+### `GET /api/product/get-product/:product_id`
+
+**Public.** One visible product by id (hidden → **404**). Returns `product_id` and `categories: [{ category_id, name }]`.
 
 ---
 
@@ -966,7 +1088,7 @@ Creates a product for the seller’s store (`store_id` from `req.user.seller_id`
 
 ### `GET /api/product/by-store/:store_name`
 
-**Public.** Visible (`hidden = false`) products for a store by name (case-insensitive). Each product includes `categories: [{ category_id, name }, ...]`.
+**Public.** Visible products for a store by name (case-insensitive). Each item includes `product_id` and `categories`.
 
 **Example:** `GET /api/product/by-store/My%20Shop`
 
@@ -1013,8 +1135,7 @@ Creates a product for the seller’s store (`store_id` from `req.user.seller_id`
 ## Not implemented yet
 
 - Changing account email (verification flow)
-- Category get-by-id / update / delete
-- Product update / variants / images
+- Product variants / images
 
 ---
 
@@ -1032,8 +1153,9 @@ Email: `src/utils/mailer.js` + templates in `src/utils/emailTemplates.js`
 | Auth | `auth.routes.js` | `auth.controller.js` | `auth.service.js` | `auth.repository.js` |
 | Address | `address.routes.js` | `address.controller.js` | `address.service.js` | `address.repository.js` |
 | Customer | `customer.routes.js` | `customer.controller.js` | `customer.service.js` | `customer.repository.js` |
-| Seller | `seller.routes.js` | `seller.controller.js` | `seller.service.js` | `auth.repository.js` (JOIN via `getUserById`) |
+| Seller | `seller.routes.js` | `seller.controller.js` | `seller.service.js` | `auth.repository.js` |
+| Admin | `admin.routes.js` | `admin.controller.js` | `admin.service.js` | `admin.repository.js` + `auth.repository.js` |
 | Store | `store.routes.js` | `store.controller.js` | `store.service.js` | `store.repository.js` (`req.user.seller_id` from `authorize`) |
-| Category | `category.routes.js` | `category.controller.js` | `category.service.js` | `category.repository.js` (global tree) |
-| Product | `product.routes.js` | `product.controller.js` | `product.service.js` | `product.repository.js` (+ store/category) |
+| Category | `category.routes.js` | `category.controller.js` | `category.service.js` | `category.repository.js` (ADMIN manage; public list) |
+| Product | `product.routes.js` | `product.controller.js` | `product.service.js` | `product.repository.js` (SELLER\|ADMIN write; public read; txn category) |
 | Health | `health.routes.js` | `health.controller.js` | `health.service.js` | — |

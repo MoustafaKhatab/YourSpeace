@@ -34,7 +34,7 @@ Brief guide for running the project so far.
 cd Backend
 npm install
 cp .env.example .env   # edit DB_* and GMAIL_* 
-npm run db             # apply schema (… stores, categories, products, product_categories)
+npm run db             # apply schema (… sellers, admins, stores, categories, products, product_categories)
 npm run dev
 ```
 
@@ -80,12 +80,20 @@ PUT    http://localhost:3000/api/auth/change-password
 GET    http://localhost:3000/api/customer/me
 PUT    http://localhost:3000/api/customer/me
 GET    http://localhost:3000/api/seller/me
+POST   http://localhost:3000/api/admin/create-admin
+GET    http://localhost:3000/api/admin/me
+PUT    http://localhost:3000/api/admin/me
 POST   http://localhost:3000/api/store/create-store
 GET    http://localhost:3000/api/store/get-user-store
 PUT    http://localhost:3000/api/store/update-user-store
 POST   http://localhost:3000/api/category/create-category
+GET    http://localhost:3000/api/category/get-category/:category_id
+PUT    http://localhost:3000/api/category/update-category/:category_id
+DELETE http://localhost:3000/api/category/delete-category/:category_id
 GET    http://localhost:3000/api/category/get-categories
 POST   http://localhost:3000/api/product/create-product
+PUT    http://localhost:3000/api/product/update-product/:product_id
+GET    http://localhost:3000/api/product/get-product/:product_id
 GET    http://localhost:3000/api/product/get-products
 GET    http://localhost:3000/api/product/by-store/:store_name
 GET    http://localhost:3000/api/product/by-category/:category_id
@@ -95,8 +103,8 @@ PUT    http://localhost:3000/api/address/update/:address_id
 DELETE http://localhost:3000/api/address/delete/:address_id
 ```
 
-Protected with `x-session-id`: change-password flow, me, customer, seller, store, category create, product create, address.  
-Public: `forget-password`, `reset-password/verify-code`, `reset-password`, `GET /category/get-categories`, `GET /product/get-products`, `GET /product/by-store/:store_name`, `GET /product/by-category/:category_id`.
+Protected with `x-session-id`: change-password flow, me, customer, seller, admin (after bootstrap), store, category manage, product create/update (SELLER|ADMIN), address.  
+Public: `forget-password`, `reset-password/verify-code`, `reset-password`, first `POST /admin/create-admin` (bootstrap only), `GET /category/get-categories`, `GET /product/get-product/:id`, `GET /product/get-products`, `GET /product/by-store/:store_name`, `GET /product/by-category/:category_id`.
 
 API endpoints are tested with **Postman**. Full request/response shapes: [api.md](api.md).
 
@@ -127,15 +135,15 @@ YourSpeace/
     │   ├── schema.sql
     │   ├── apply_schema.js
     │   ├── set_password.sql
-    │   └── migrate_role_enum.sql
+    │   └── migrate_*.sql      # one-off migrations (admins, categories, …)
     └── src/
         ├── app.js
         ├── server.js
-        ├── routes/            # health, auth, address, customer, seller, store
+        ├── routes/            # health, auth, address, customer, seller, admin, store, category, product
         ├── controllers/
         ├── services/
         ├── rep/               # Repository (SQL)
-        ├── middleware/        # sessionAuth, authorize
+        ├── middleware/        # sessionAuth, authorize / authorizeAny
         └── utils/             # mailer + emailTemplates (HTML)
 ```
 
@@ -150,7 +158,8 @@ Examples:
 - `/api/auth/*` → `auth.controller` → `auth.service` → `auth.repository` (+ `mailer` / `emailTemplates` on password emails; `sessionAuth` on change-password + `/verify-code`; reset verify is public)
 - `/api/customer/*` → `sessionAuth` → `customer.controller` → `customer.service` → `customer.repository`
 - `/api/seller/*` → `sessionAuth` + `authorize('SELLER')` → `seller.controller` → `seller.service` → `auth.repository` (user + sellers JOIN)
+- `/api/admin/*` → create-admin: bootstrap or ADMIN; me: `sessionAuth` + `authorize('ADMIN')` (sets `req.user.admin_id`) → `admin.controller` → …
 - `/api/store/*` → `sessionAuth` + `authorize('SELLER')` (sets `req.user.seller_id`) → `store.controller` → `store.service` → `store.repository`
-- `/api/category/*` → create: `sessionAuth` + `authorize('SELLER')`; list: public → `category.controller` → …
-- `/api/product/*` → create: seller auth (at most one category); get-products / by-store / by-category (public feed + filters; by-category includes visible subtree) → `product.controller` → `product.service` → `product.repository`
+- `/api/category/*` → manage: `sessionAuth` + `authorize('ADMIN')`; list: public → `category.controller` → …
+- `/api/product/*` → create/update: SELLER|ADMIN (txn category assign); get-product / get-products / by-store / by-category: public → `product.controller` → …
 - `/api/address/*` → `sessionAuth` + `authorize('CUSTOMER')` → `address.controller` → `address.service` → `address.repository`
