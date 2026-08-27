@@ -19,6 +19,27 @@ const categoryJsonAgg = `
     ) AS categories
 `;
 
+/** Variants for a product: [{ variant_id, color, size, stock, price }, ...] */
+const variantsJsonAgg = `
+    COALESCE(
+        (
+            SELECT json_agg(
+                json_build_object(
+                    'variant_id', v.variant_id,
+                    'color', v.color,
+                    'size', v.size,
+                    'stock', v.stock,
+                    'price', v.price
+                )
+                ORDER BY v.variant_id
+            )
+            FROM product_variants v
+            WHERE v.product_id = p.product_id
+        ),
+        '[]'::json
+    ) AS variants
+`;
+
 const productSelectFields = `
     p.product_id,
     p.store_id,
@@ -27,14 +48,43 @@ const productSelectFields = `
     p.hidden,
     p.created_at,
     p.updated_at,
-    ${categoryJsonAgg}
+    ${categoryJsonAgg},
+    ${variantsJsonAgg}
 `;
 
+const insertVariants = async (client, product_id, variants) => {
+    const inserted = [];
+    for (const variant of variants) {
+        const result = await client.query(
+            `
+            INSERT INTO product_variants (product_id, color, size, stock, price)
+            VALUES ($1, $2, $3, $4, $5)
+            RETURNING variant_id, product_id, color, size, stock, price, created_at, updated_at
+            `,
+            [
+                product_id,
+                variant.color,
+                variant.size,
+                variant.stock,
+                variant.price,
+            ]
+        );
+        inserted.push(result.rows[0]);
+    }
+    return inserted;
+};
+
 /**
- * Insert product and optional product_categories row in one transaction.
- * category_id must already be validated as existing (or null).
+ * Insert product + optional category + required variants in one transaction.
  */
-const createProductWithCategory = async (store_id, title, description, hidden, category_id = null) => {
+const createProductWithDetails = async (
+    store_id,
+    title,
+    description,
+    hidden,
+    category_id,
+    variants
+) => {
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
@@ -80,6 +130,13 @@ const createProductWithCategory = async (store_id, title, description, hidden, c
             );
         }
 
+        const savedVariants = await insertVariants(client, product.product_id, variants);
+        if (!savedVariants.length) {
+            const error = new Error('At least one product variant is required');
+            error.statusCode = 400;
+            throw error;
+        }
+
         await client.query('COMMIT');
 
         return {
@@ -91,6 +148,7 @@ const createProductWithCategory = async (store_id, title, description, hidden, c
                 category_id: category.category_id,
                 category_name: category.name,
             }),
+            variants: savedVariants,
         };
     } catch (error) {
         await client.query('ROLLBACK');
@@ -101,10 +159,11 @@ const createProductWithCategory = async (store_id, title, description, hidden, c
 };
 
 /**
- * Update product fields; optionally replace/clear category in the same transaction.
- * categoryChange: undefined = leave as-is; null = remove; number = set/replace.
+ * Update product; optional category change; optional variants replace.
+ * variantsChange: undefined = keep existing (must already have ≥1);
+ *                 array = replace all (must be non-empty).
  */
-const updateProductWithCategory = async (product_id, fields, categoryChange) => {
+const updateProductWithDetails = async (product_id, fields, categoryChange, variantsChange) => {
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
@@ -187,6 +246,35 @@ const updateProductWithCategory = async (product_id, fields, categoryChange) => 
             category = catResult.rows[0] || null;
         }
 
+        let savedVariants;
+        if (variantsChange !== undefined) {
+            if (!Array.isArray(variantsChange) || variantsChange.length === 0) {
+                const error = new Error('At least one product variant is required');
+                error.statusCode = 400;
+                throw error;
+            }
+            await client.query(`DELETE FROM product_variants WHERE product_id = $1`, [product_id]);
+            savedVariants = await insertVariants(client, product_id, variantsChange);
+        } else {
+            const existingVariants = await client.query(
+                `
+                SELECT variant_id, product_id, color, size, stock, price, created_at, updated_at
+                FROM product_variants
+                WHERE product_id = $1
+                ORDER BY variant_id
+                `,
+                [product_id]
+            );
+            if (!existingVariants.rows.length) {
+                const error = new Error(
+                    'Product has no variants; send variants array to add at least one'
+                );
+                error.statusCode = 400;
+                throw error;
+            }
+            savedVariants = existingVariants.rows;
+        }
+
         await client.query('COMMIT');
 
         return {
@@ -198,6 +286,7 @@ const updateProductWithCategory = async (product_id, fields, categoryChange) => 
                 category_id: category.category_id,
                 category_name: category.name,
             }),
+            variants: savedVariants,
         };
     } catch (error) {
         await client.query('ROLLBACK');
@@ -218,9 +307,6 @@ const getProductById = async (product_id) => {
     return result.rows[0];
 };
 
-/**
- * Public feed: newest visible products across all stores (main page).
- */
 const getProducts = async (limit, offset) => {
     const query = `
         SELECT
@@ -232,7 +318,8 @@ const getProducts = async (limit, offset) => {
             p.hidden,
             p.created_at,
             p.updated_at,
-            ${categoryJsonAgg}
+            ${categoryJsonAgg},
+            ${variantsJsonAgg}
         FROM products p
         INNER JOIN stores s ON s.store_id = p.store_id
         WHERE p.hidden = FALSE
@@ -243,7 +330,6 @@ const getProducts = async (limit, offset) => {
     return result.rows;
 };
 
-/** Public list: products for a store by store name (case-insensitive). Skips hidden. */
 const getProductByStoreName = async (store_name) => {
     const query = `
         SELECT
@@ -258,9 +344,6 @@ const getProductByStoreName = async (store_name) => {
     return result.rows;
 };
 
-/**
- * Public list: products in this category or any visible descendant (recursive tree).
- */
 const getProductByCategory = async (category_id) => {
     const query = `
         WITH RECURSIVE category_tree AS (
@@ -292,8 +375,8 @@ const getProductByCategory = async (category_id) => {
 };
 
 module.exports = {
-    createProductWithCategory,
-    updateProductWithCategory,
+    createProductWithDetails,
+    updateProductWithDetails,
     getProductById,
     getProducts,
     getProductByStoreName,

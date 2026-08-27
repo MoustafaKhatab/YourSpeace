@@ -4,12 +4,8 @@ const categoryRepository = require('../rep/category.repository');
 const { getUserStoreBySellerId } = require('./store.service');
 
 /**
- * Create product for a store. category_id comes from client (from public get-categories).
- * Product + product_categories insert run in one DB transaction.
- *
- * @param {{ role: string, seller_id?: string|number }} actor
- * @param {{ title, description, hidden, category_id, store_id? }} data
- *   store_id required when actor is ADMIN
+ * Create product for a store. Requires variants (sellable units).
+ * Product + category + variants run in one DB transaction.
  */
 const createProduct = async (actor, data) => {
     let store;
@@ -33,6 +29,12 @@ const createProduct = async (actor, data) => {
         throw error;
     }
 
+    if (!data.variants || !Array.isArray(data.variants) || data.variants.length === 0) {
+        const error = new Error('variants is required and must contain at least one variant');
+        error.statusCode = 400;
+        throw error;
+    }
+
     if (data.category_id !== null && data.category_id !== undefined) {
         const category = await categoryRepository.getCategoryById(data.category_id);
         if (!category) {
@@ -43,12 +45,13 @@ const createProduct = async (actor, data) => {
     }
 
     try {
-        return await productRepository.createProductWithCategory(
+        return await productRepository.createProductWithDetails(
             store.store_id,
             data.title,
             data.description,
             data.hidden ?? false,
-            data.category_id ?? null
+            data.category_id ?? null,
+            data.variants
         );
     } catch (error) {
         if (error.statusCode) {
@@ -60,7 +63,9 @@ const createProduct = async (actor, data) => {
             throw notFound;
         }
         if (error.code === '23505') {
-            const conflict = new Error('Product already has a category');
+            const conflict = new Error(
+                'Duplicate variant (same color/size) or product already has a category'
+            );
             conflict.statusCode = 400;
             throw conflict;
         }
@@ -69,8 +74,8 @@ const createProduct = async (actor, data) => {
 };
 
 /**
- * Update product by id. Seller: only own store. Admin: any store.
- * category_id: omit = no change; null = clear; number = set/replace (transactional).
+ * Update product by id. Seller: own store only. Admin: any.
+ * variants: omit = keep existing (must already have ≥1); array = replace (must be non-empty).
  */
 const updateProduct = async (actor, product_id, fields) => {
     const existing = await productRepository.getProductById(product_id);
@@ -106,15 +111,28 @@ const updateProduct = async (actor, product_id, fields) => {
         }
     }
 
+    const variantsChange = Object.prototype.hasOwnProperty.call(fields, 'variants')
+        ? fields.variants
+        : undefined;
+
+    if (variantsChange !== undefined) {
+        if (!Array.isArray(variantsChange) || variantsChange.length === 0) {
+            const error = new Error('variants must contain at least one variant');
+            error.statusCode = 400;
+            throw error;
+        }
+    }
+
     try {
-        return await productRepository.updateProductWithCategory(
+        return await productRepository.updateProductWithDetails(
             product_id,
             {
                 title: fields.title,
                 description: fields.description,
                 hidden: fields.hidden,
             },
-            categoryChange
+            categoryChange,
+            variantsChange
         );
     } catch (error) {
         if (error.statusCode) {
@@ -126,7 +144,9 @@ const updateProduct = async (actor, product_id, fields) => {
             throw notFound;
         }
         if (error.code === '23505') {
-            const conflict = new Error('Product already has a category');
+            const conflict = new Error(
+                'Duplicate variant (same color/size) or product already has a category'
+            );
             conflict.statusCode = 400;
             throw conflict;
         }
@@ -134,7 +154,6 @@ const updateProduct = async (actor, product_id, fields) => {
     }
 };
 
-/** Public get by id — hidden products look like not found. */
 const getProductById = async (product_id) => {
     const product = await productRepository.getProductById(product_id);
     if (!product || product.hidden) {

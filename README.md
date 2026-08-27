@@ -59,6 +59,6 @@ This project follows an **Agile Scrum** workflow. Process details and the epic l
 
 ## Project Status
 
-Sprint 4: Admin + Seller catalog (store, categories-by-admin, product create/update with transactional category assign). Next: variants / images, then cart.
+Sprint 4: Admin + Seller catalog (store, categories-by-admin, product create/update with required variants + transactional category). Next: images, then cart.
 
 See **[Progress.md](docs/progress/Progress.md)** for what has landed, and **[Jira](https://codx207.atlassian.net/jira/software/projects/SCRUM/summary?atlOrigin=eyJpIjoiZGRjNTQ2ZTJhOTk2NDkyOWJhNzJiMGNmYzRlMmUzNjQiLCJwIjoiaiJ9)** for what is coming next.

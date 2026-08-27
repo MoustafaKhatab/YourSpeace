@@ -103,10 +103,20 @@ PUT    http://localhost:3000/api/address/update/:address_id
 DELETE http://localhost:3000/api/address/delete/:address_id
 ```
 
-Protected with `x-session-id`: change-password flow, me, customer, seller, admin (after bootstrap), store, category manage, product create/update (SELLER|ADMIN), address.  
-Public: `forget-password`, `reset-password/verify-code`, `reset-password`, first `POST /admin/create-admin` (bootstrap only), `GET /category/get-categories`, `GET /product/get-product/:id`, `GET /product/get-products`, `GET /product/by-store/:store_name`, `GET /product/by-category/:category_id`.
+Protected with `x-session-id`: change-password flow, me, customer, seller, admin (after bootstrap), store, category manage, product create/update (SELLER|ADMIN; create requires `variants[]`), address.  
+Public: `forget-password`, `reset-password/verify-code`, `reset-password`, first `POST /admin/create-admin` (bootstrap only), `GET /category/get-categories`, `GET /product/get-product/:id`, `GET /product/get-products`, `GET /product/by-store/:store_name`, `GET /product/by-category/:category_id` (reads include `variants`).
 
 API endpoints are tested with **Postman**. Full request/response shapes: [api.md](api.md).
+
+### Optional: product variants smoke script
+
+After Postgres is up and `npm run db` has been applied, from `Backend/`:
+
+```bash
+node scripts/smoke-variants.js
+```
+
+Starts the app **in-process** (no separate `npm run dev` needed). Checks: create without variants → 400; create with variants → 201; public get includes `variants`; update replace; empty `variants` → 400. Writes throwaway seller/store/product rows.
 
 ---
 
@@ -135,7 +145,9 @@ YourSpeace/
     │   ├── schema.sql
     │   ├── apply_schema.js
     │   ├── set_password.sql
-    │   └── migrate_*.sql      # one-off migrations (admins, categories, …)
+    │   └── migrate_*.sql      # one-off migrations (admins, categories, variants, …)
+    ├── scripts/
+    │   └── smoke-variants.js  # optional in-process product variants check
     └── src/
         ├── app.js
         ├── server.js
@@ -161,5 +173,5 @@ Examples:
 - `/api/admin/*` → create-admin: bootstrap or ADMIN; me: `sessionAuth` + `authorize('ADMIN')` (sets `req.user.admin_id`) → `admin.controller` → …
 - `/api/store/*` → `sessionAuth` + `authorize('SELLER')` (sets `req.user.seller_id`) → `store.controller` → `store.service` → `store.repository`
 - `/api/category/*` → manage: `sessionAuth` + `authorize('ADMIN')`; list: public → `category.controller` → …
-- `/api/product/*` → create/update: SELLER|ADMIN (txn category assign); get-product / get-products / by-store / by-category: public → `product.controller` → …
+- `/api/product/*` → create/update: SELLER|ADMIN (txn category + required variants); public reads include `variants` → `product.controller` → …
 - `/api/address/*` → `sessionAuth` + `authorize('CUSTOMER')` → `address.controller` → `address.service` → `address.repository`

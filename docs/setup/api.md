@@ -977,13 +977,14 @@ Categories are shared (not store-owned). Unique name per parent (case-insensitiv
 **Write** (`create` / `update`): `sessionAuth` + `authorizeAny('SELLER', 'ADMIN')`.  
 **Read** (feed / by-store / by-category / by-id): **public** — no session.  
 Sellers do **not** manage categories; they send a `category_id` from the client (from `GET /category/get-categories`).  
-Create/update with a category uses a **DB transaction** (`products` + `product_categories`). One category per product.
+Create/update uses a **DB transaction** (`products` + `product_categories` + `product_variants`). One category per product.  
+**Variants** are the sellable unit (stock + price). Create requires ≥1 variant. Update: omit `variants` = keep existing; send array = full replace (must be non-empty).
 
 ### `POST /api/product/create-product`
 
 - **SELLER** — product goes to the seller’s store (`seller_id` → store). Do **not** send `store_id`.  
 - **ADMIN** — must send `store_id` of the target store.  
-Optional `category_id`: must exist or **404**; nothing is partially committed (transaction).
+Optional `category_id`: must exist or **404**. **`variants` required** (≥1). Nothing is partially committed (transaction).
 
 **Headers**
 | Key | Value |
@@ -997,7 +998,11 @@ Optional `category_id`: must exist or **404**; nothing is partially committed (t
   "title": "Phone Case",
   "description": "Clear case",
   "hidden": false,
-  "category_id": 1
+  "category_id": 1,
+  "variants": [
+    { "color": "Black", "size": "M", "stock": 10, "price": 19.99 },
+    { "color": "White", "size": "L", "stock": 5, "price": 21.5 }
+  ]
 }
 ```
 
@@ -1008,13 +1013,17 @@ Optional `category_id`: must exist or **404**; nothing is partially committed (t
 - `hidden` — optional boolean (default `false`)  
 - `category_id` — optional; client-chosen id from category list  
 - `store_id` — required for ADMIN only  
+- `variants` — **required** non-empty array; each item:
+  - `color` / `size` — optional strings, max **100** (unique pair per product, case-insensitive; nulls treated as empty)
+  - `stock` — required non-negative integer  
+  - `price` — required number ≥ 0  
 
-**Response `201`** — includes `product_id` (use this for later get/update), `categories[]`, and when assigned `category_id` / `category_name`.
+**Response `201`** — includes `product_id`, `categories[]`, `variants[]` (with `variant_id`), and when assigned `category_id` / `category_name`.
 
 **Errors**
 | Status | When |
 |--------|------|
-| `400` | Invalid fields; ADMIN missing `store_id` |
+| `400` | Invalid fields; missing/empty `variants`; ADMIN missing `store_id` |
 | `401` | Missing/invalid session |
 | `403` | Not SELLER or ADMIN |
 | `404` | No seller store, store not found, or category not found |
@@ -1024,21 +1033,23 @@ Optional `category_id`: must exist or **404**; nothing is partially committed (t
 ### `PUT /api/product/update-product/:product_id`
 
 **SELLER** — only products in their store. **ADMIN** — any product.  
-Partial body. `category_id`: omit = unchanged; `null` = clear; number = set/replace (transactional).
+Partial body. `category_id`: omit = unchanged; `null` = clear; number = set/replace (transactional).  
+`variants`: omit = keep; array = **replace all** (must be non-empty). Empty array → **400**.
 
 **Example body**
 ```json
 {
   "title": "Phone Case XL",
   "hidden": false,
-  "category_id": 2
+  "category_id": 2,
+  "variants": [{ "color": "Blue", "size": "S", "stock": 3, "price": 18 }]
 }
 ```
 
 **Errors**
 | Status | When |
 |--------|------|
-| `400` | Invalid fields / empty body |
+| `400` | Invalid fields / empty body / empty `variants` |
 | `401` / `403` | Auth or not owner (seller) |
 | `404` | Product or category not found |
 
@@ -1046,13 +1057,13 @@ Partial body. `category_id`: omit = unchanged; `null` = clear; number = set/repl
 
 ### `GET /api/product/get-product/:product_id`
 
-**Public.** One visible product by id (hidden → **404**). Returns `product_id` and `categories: [{ category_id, name }]`.
+**Public.** One visible product by id (hidden → **404**). Returns `product_id`, `categories: [{ category_id, name }]`, and `variants: [{ variant_id, color, size, stock, price, ... }]`.
 
 ---
 
 ### `GET /api/product/get-products`
 
-**Public.** Main-page feed: newest visible (`hidden = false`) products across all stores. Includes `store_name` and `categories: [{ category_id, name }, ...]`.
+**Public.** Main-page feed: newest visible (`hidden = false`) products across all stores. Includes `store_name`, `categories`, and `variants`.
 
 **Query (optional)**
 | Param | Default | Notes |
@@ -1073,7 +1084,10 @@ Partial body. `category_id`: omit = unchanged; `null` = clear; number = set/repl
       "store_name": "My Shop",
       "title": "...",
       "hidden": false,
-      "categories": [{ "category_id": "2", "name": "Phones" }]
+      "categories": [{ "category_id": "2", "name": "Phones" }],
+      "variants": [
+        { "variant_id": "1", "color": "Black", "size": "M", "stock": 10, "price": "19.99" }
+      ]
     }
   ]
 }
@@ -1088,7 +1102,7 @@ Partial body. `category_id`: omit = unchanged; `null` = clear; number = set/repl
 
 ### `GET /api/product/by-store/:store_name`
 
-**Public.** Visible products for a store by name (case-insensitive). Each item includes `product_id` and `categories`.
+**Public.** Visible products for a store by name (case-insensitive). Each item includes `product_id`, `categories`, and `variants`.
 
 **Example:** `GET /api/product/by-store/My%20Shop`
 
@@ -1102,7 +1116,10 @@ Partial body. `category_id`: omit = unchanged; `null` = clear; number = set/repl
       "store_id": "2",
       "title": "...",
       "hidden": false,
-      "categories": [{ "category_id": "2", "name": "Phones" }]
+      "categories": [{ "category_id": "2", "name": "Phones" }],
+      "variants": [
+        { "variant_id": "1", "color": "Black", "size": "M", "stock": 10, "price": "19.99" }
+      ]
     }
   ]
 }
@@ -1118,7 +1135,7 @@ Partial body. `category_id`: omit = unchanged; `null` = clear; number = set/repl
 
 ### `GET /api/product/by-category/:category_id`
 
-**Public.** Visible products assigned to this category **or any visible descendant** (recursive tree via `WITH RECURSIVE`). Category must exist and be `visible`. Same `categories` array shape as by-store.
+**Public.** Visible products assigned to this category **or any visible descendant** (recursive tree via `WITH RECURSIVE`). Category must exist and be `visible`. Same shape as by-store (`categories` + `variants`).
 
 **Example:** `GET /api/product/by-category/1`
 
@@ -1135,7 +1152,8 @@ Partial body. `category_id`: omit = unchanged; `null` = clear; number = set/repl
 ## Not implemented yet
 
 - Changing account email (verification flow)
-- Product variants / images
+- Product images
+- Dedicated variant-only endpoints (create/update/delete one variant without full replace)
 
 ---
 
@@ -1157,5 +1175,5 @@ Email: `src/utils/mailer.js` + templates in `src/utils/emailTemplates.js`
 | Admin | `admin.routes.js` | `admin.controller.js` | `admin.service.js` | `admin.repository.js` + `auth.repository.js` |
 | Store | `store.routes.js` | `store.controller.js` | `store.service.js` | `store.repository.js` (`req.user.seller_id` from `authorize`) |
 | Category | `category.routes.js` | `category.controller.js` | `category.service.js` | `category.repository.js` (ADMIN manage; public list) |
-| Product | `product.routes.js` | `product.controller.js` | `product.service.js` | `product.repository.js` (SELLER\|ADMIN write; public read; txn category) |
+| Product | `product.routes.js` | `product.controller.js` | `product.service.js` | `product.repository.js` (SELLER\|ADMIN write; public read; txn category + variants) |
 | Health | `health.routes.js` | `health.controller.js` | `health.service.js` | — |

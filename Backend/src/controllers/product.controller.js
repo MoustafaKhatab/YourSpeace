@@ -2,6 +2,7 @@ const productService = require('../services/product.service');
 
 const MAX_TITLE_LENGTH = 255;
 const MAX_DESCRIPTION_LENGTH = 5000;
+const MAX_VARIANT_LABEL_LENGTH = 100;
 
 const parsePositiveInt = (value, fieldName) => {
     const n = Number(value);
@@ -11,6 +12,67 @@ const parsePositiveInt = (value, fieldName) => {
         throw error;
     }
     return n;
+};
+
+const parseVariants = (rawVariants, { required }) => {
+    if (rawVariants === undefined) {
+        if (required) {
+            return { error: 'variants is required and must contain at least one variant' };
+        }
+        return { variants: undefined };
+    }
+
+    if (!Array.isArray(rawVariants) || rawVariants.length === 0) {
+        return { error: 'variants must be a non-empty array' };
+    }
+
+    const variants = [];
+    for (let i = 0; i < rawVariants.length; i++) {
+        const item = rawVariants[i];
+        if (!item || typeof item !== 'object' || Array.isArray(item)) {
+            return { error: `variants[${i}] must be an object` };
+        }
+
+        let color = null;
+        if (item.color !== undefined && item.color !== null && String(item.color).trim() !== '') {
+            color = String(item.color).trim();
+            if (color.length > MAX_VARIANT_LABEL_LENGTH) {
+                return {
+                    error: `variants[${i}].color must be at most ${MAX_VARIANT_LABEL_LENGTH} characters`,
+                };
+            }
+        }
+
+        let size = null;
+        if (item.size !== undefined && item.size !== null && String(item.size).trim() !== '') {
+            size = String(item.size).trim();
+            if (size.length > MAX_VARIANT_LABEL_LENGTH) {
+                return {
+                    error: `variants[${i}].size must be at most ${MAX_VARIANT_LABEL_LENGTH} characters`,
+                };
+            }
+        }
+
+        if (item.stock === undefined || item.stock === null) {
+            return { error: `variants[${i}].stock is required` };
+        }
+        const stock = Number(item.stock);
+        if (!Number.isInteger(stock) || stock < 0) {
+            return { error: `variants[${i}].stock must be a non-negative integer` };
+        }
+
+        if (item.price === undefined || item.price === null || item.price === '') {
+            return { error: `variants[${i}].price is required` };
+        }
+        const price = Number(item.price);
+        if (!Number.isFinite(price) || price < 0) {
+            return { error: `variants[${i}].price must be a number >= 0` };
+        }
+
+        variants.push({ color, size, stock, price });
+    }
+
+    return { variants };
 };
 
 const parseCreateOrUpdateBody = (body, { partial = false } = {}) => {
@@ -76,6 +138,15 @@ const parseCreateOrUpdateBody = (body, { partial = false } = {}) => {
             errors.push('store_id must be a positive integer');
         } else {
             fields.store_id = n;
+        }
+    }
+
+    if (!partial || (body && Object.prototype.hasOwnProperty.call(body, 'variants'))) {
+        const parsed = parseVariants(body?.variants, { required: !partial });
+        if (parsed.error) {
+            errors.push(parsed.error);
+        } else if (parsed.variants !== undefined) {
+            fields.variants = parsed.variants;
         }
     }
 

@@ -126,6 +126,7 @@ PGPASSWORD=postgres psql -h localhost -U postgres -d yourspeace -f Backend/Datab
 | `categories` | Global category tree (`parent_id`); unique name per parent; **ADMIN** manages |
 | `products` | Products belonging to a store |
 | `product_categories` | Product ↔ category link; **one category per product** (unique `product_id`) |
+| `product_variants` | Sellable units (color, size, stock, price); ≥1 required per product via API |
 
 ### `users`
 - `user_id` PK  
@@ -200,6 +201,15 @@ Not owned by a seller/store. **ADMIN** creates/updates/deletes; public list retu
 - `product_id` FK → `products` (ON DELETE CASCADE)  
 - `category_id` FK → `categories` (ON DELETE CASCADE)  
 - Unique index on `product_id` — **one category per product** for now (change later via update-product)
+
+### `product_variants`
+- `variant_id` PK  
+- `product_id` FK → `products` (ON DELETE CASCADE)  
+- `color`, `size` (optional, max 100)  
+- `stock` (INT ≥ 0)  
+- `price` (NUMERIC(12,2) ≥ 0)  
+- Unique index on (`product_id`, lower color/size with null as `''`) — one color+size pair per product  
+- API requires ≥1 variant on create; update replaces the full set when `variants` is sent
 
 ---
 
@@ -291,6 +301,7 @@ Backend/
     ├── migrate_role_enum.sql # One-time: VARCHAR role → user_role enum
     ├── migrate_categories_global.sql # One-time: drop categories.store_id; unique (parent, name)
     ├── migrate_product_one_category.sql # One-time: unique product_id on product_categories
+    ├── migrate_product_variants.sql # One-time: product_variants + unique (product, color, size)
     └── migrate_admins.sql # One-time: create admins table
 ```
 

@@ -15,7 +15,7 @@
 
 1. **Admin + Seller first** — make both roles solid before deep customer / home / cart / order work.
 2. **Admin:** account + category management owned by ADMIN — Done.
-3. **Seller catalog:** product create/update (txn category) — Done; next variants → images.
+3. **Seller catalog:** product create/update with required variants (txn category) — Done; next images (and dedicated variant APIs if needed).
 4. **Later:** Customer flows, home-page display detail, cart, orders.
 
 | Ticket | Item | Status |
@@ -26,11 +26,11 @@
 | SCRUM-36 | Store Update | Done |
 | SCRUM-37 | Category Retrieval | Done (`GET /get-categories` public) |
 | — | **Admin account + category admin APIs** | **Done** |
-| SCRUM-38 | Product Creation | Done (SELLER\|ADMIN; txn + category_id from client) |
-| SCRUM-39 | Product Retrieval | Done (feed / by-id / by-store / by-category) |
-| SCRUM-40 | Product Update | Done (SELLER own store \| ADMIN any; category change txn) |
-| SCRUM-41 | Product Variant Creation | To Do |
-| SCRUM-42 | Product Variant Management | To Do |
+| SCRUM-38 | Product Creation | Done (SELLER\|ADMIN; txn + category_id + required variants) |
+| SCRUM-39 | Product Retrieval | Done (feed / by-id / by-store / by-category; includes variants) |
+| SCRUM-40 | Product Update | Done (SELLER own store \| ADMIN any; category + variants replace txn) |
+| SCRUM-41 | Product Variant Creation | Done (on create-product; ≥1 variant required) |
+| SCRUM-42 | Product Variant Management | Done (replace via update-product `variants`) |
 | SCRUM-43 | Product Image Management | To Do |
 | SCRUM-44 | Product Category Assignment | Done (on create/update via `product_categories` txn) |
 
@@ -42,7 +42,8 @@
 
 ## Latest completed
 
-- **Product create/update (SELLER|ADMIN)** — transactional `products` + `product_categories`; `category_id` from client; public `get-product/:id` + by-store; SCRUM-40 done
+- **Product variants** — `product_variants` (color, size, stock, price); create requires ≥1 variant; update omit = keep / array = replace (non-empty); public reads include `variants[]`; SCRUM-41/42 done
+- **Product create/update (SELLER|ADMIN)** — transactional `products` + `product_categories` + variants; `category_id` from client; public `get-product/:id` + by-store; SCRUM-40 done
 - **Admin role** — `admins` table; `POST /api/admin/create-admin` (bootstrap first / ADMIN later); `GET|PUT /api/admin/me`; `authorize('ADMIN')` sets `admin_id`
 - **Category management → ADMIN** — create / get-by-id / update / delete require ADMIN; public `GET /get-categories` unchanged
 - **Main-page product feed** — public `GET /api/product/get-products` (newest visible products, optional `limit`/`offset`, includes `store_name` + categories)
@@ -134,11 +135,11 @@
 | SCRUM-36 | Store Update | Done | `PUT /api/store/update-user-store`; partial update + uniqueness |
 | — | Category create | Done | `POST /api/category/create-category`; **ADMIN** only; unique name per parent |
 | SCRUM-37 | Category Retrieval | Done | `GET /api/category/get-categories` (public, visible only); admin get/update/delete |
-| SCRUM-38 | Product Creation | Done | SELLER\|ADMIN; txn `products` + `product_categories` |
-| SCRUM-39 | Product Retrieval | Done | public get-product / get-products / by-store / by-category |
-| SCRUM-40 | Product Update | Done | SELLER own store \| ADMIN any; category change txn |
-| SCRUM-41 | Product Variant Creation | To Do | — |
-| SCRUM-42 | Product Variant Management | To Do | — |
+| SCRUM-38 | Product Creation | Done | SELLER\|ADMIN; txn product + category + variants (≥1) |
+| SCRUM-39 | Product Retrieval | Done | public get-product / get-products / by-store / by-category (+ variants) |
+| SCRUM-40 | Product Update | Done | SELLER own store \| ADMIN any; category + variants replace txn |
+| SCRUM-41 | Product Variant Creation | Done | required `variants[]` on create-product |
+| SCRUM-42 | Product Variant Management | Done | replace via update-product `variants` (omit keeps) |
 | SCRUM-43 | Product Image Management | To Do | — |
 | SCRUM-44 | Product Category Assignment | Done | create/update via `product_categories` txn |
 

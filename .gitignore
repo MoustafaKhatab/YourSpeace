@@ -6,3 +6,4 @@ node_modules/
 # Local / private (not shared with the repo)
 .cursor/
 docs/progress/System_Review.md
+tmp-cv/
